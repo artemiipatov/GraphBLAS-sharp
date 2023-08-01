@@ -34,32 +34,35 @@ module Vector =
     let toDense (clContext: ClContext) workGroupSize =
 
         let toDense =
-            <@ fun (ndRange: Range1D) length (values: ClArray<'a>) (indices: ClArray<int>) (resultArray: ClArray<'a option>) ->
-                let gid = ndRange.GlobalID0
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (values: ClArray<'a>)
+                    (indices: ClArray<int>)
+                    (resultArray: ClArray<'a option>) ->
+                    let gid = ndRange.GlobalID0
 
-                if gid < length then
-                    let index = indices.[gid]
+                    if gid < length then
+                        let index = indices.[gid]
 
-                    resultArray.[index] <- Some values.[gid] @>
+                        resultArray.[index] <- Some values.[gid]
+            @>
 
         let kernel = clContext.Compile(toDense)
 
-        let create =
-            ClArray.zeroCreate clContext workGroupSize
+        let create = ClArray.zeroCreate clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (vector: ClVector.Sparse<'a>) ->
-            let resultVector =
-                create processor allocationMode vector.Size
+            let resultVector = create processor allocationMode vector.Size
 
-            let ndRange =
-                Range1D.CreateValid(vector.Indices.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(vector.Indices.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc ndRange vector.Indices.Length vector.Values vector.Indices resultVector)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange vector.Indices.Length vector.Values vector.Indices resultVector)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -68,7 +71,6 @@ module Vector =
 
     let reduce<'a when 'a: struct> (opAdd: Expr<'a -> 'a -> 'a>) (clContext: ClContext) workGroupSize =
 
-        let reduce =
-            Common.Reduce.reduce opAdd clContext workGroupSize
+        let reduce = Common.Reduce.reduce opAdd clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) (vector: ClVector.Sparse<'a>) -> reduce processor vector.Values

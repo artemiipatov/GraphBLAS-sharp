@@ -19,11 +19,10 @@ let wgSize = Utils.defaultWorkGroupSize
 let getCorrectnessTestName case datatype =
     $"Correctness on %s{datatype}, %A{case.Format}, %A{case.TestContext}"
 
-let checkResult areEqual zero actual (expected2D: 'a [,]) =
+let checkResult areEqual zero actual (expected2D: 'a[,]) =
     match actual with
     | Matrix.COO actual ->
-        let expected =
-            Matrix.COO.FromArray2D(expected2D, areEqual zero)
+        let expected = Matrix.COO.FromArray2D(expected2D, areEqual zero)
 
         "The number of rows should be the same"
         |> Expect.equal actual.RowCount expected.RowCount
@@ -40,8 +39,7 @@ let checkResult areEqual zero actual (expected2D: 'a [,]) =
         "Value arrays should be equal"
         |> Utils.compareArrays areEqual actual.Values expected.Values
     | Matrix.CSR actual ->
-        let expected =
-            Matrix.CSR.FromArray2D(expected2D, areEqual zero)
+        let expected = Matrix.CSR.FromArray2D(expected2D, areEqual zero)
 
         "The number of rows should be the same"
         |> Expect.equal actual.RowCount expected.RowCount
@@ -58,8 +56,7 @@ let checkResult areEqual zero actual (expected2D: 'a [,]) =
         "Value arrays should be equal"
         |> Utils.compareArrays areEqual actual.Values expected.Values
     | Matrix.CSC actual ->
-        let expected =
-            Matrix.CSC.FromArray2D(expected2D, areEqual zero)
+        let expected = Matrix.CSC.FromArray2D(expected2D, areEqual zero)
 
         "The number of rows should be the same"
         |> Expect.equal actual.RowCount expected.RowCount
@@ -77,12 +74,11 @@ let checkResult areEqual zero actual (expected2D: 'a [,]) =
         |> Utils.compareArrays areEqual actual.Values expected.Values
     | _ -> () // TODO()
 
-let makeTestRegular context q transposeFun hostTranspose isEqual zero case (array: 'a [,]) =
+let makeTestRegular context q transposeFun hostTranspose isEqual zero case (array: 'a[,]) =
     match case.Format with
     | LIL -> ()
     | _ ->
-        let mtx =
-            Utils.createMatrixFromArray2D case.Format array (isEqual zero)
+        let mtx = Utils.createMatrixFromArray2D case.Format array (isEqual zero)
 
         if mtx.NNZ > 0 then
             let actual =
@@ -93,10 +89,7 @@ let makeTestRegular context q transposeFun hostTranspose isEqual zero case (arra
                 mT.Dispose q
                 res
 
-            logger.debug (
-                eventX "Actual is {actual}"
-                >> setField "actual" $"%A{actual}"
-            )
+            logger.debug (eventX "Actual is {actual}" >> setField "actual" $"%A{actual}")
 
             let expected2D = hostTranspose array
 
@@ -136,5 +129,4 @@ let testFixtures case =
       createTest<byte> case 0uy (=)
       createTest<bool> case false (=) ]
 
-let tests =
-    operationGPUTests "Matrix.Transpose tests" testFixtures
+let tests = operationGPUTests "Matrix.Transpose tests" testFixtures

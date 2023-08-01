@@ -92,9 +92,7 @@ module ClMatrix =
 
         interface IDeviceMemObject with
             member this.Dispose q =
-                this.Rows
-                |> Seq.choose id
-                |> Seq.iter (fun vector -> vector.Dispose q)
+                this.Rows |> Seq.choose id |> Seq.iter (fun vector -> vector.Dispose q)
 
     type Tuple<'elem when 'elem: struct> =
         { Context: ClContext

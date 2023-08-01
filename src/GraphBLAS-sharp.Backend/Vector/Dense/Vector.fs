@@ -27,10 +27,13 @@ module Vector =
         workGroupSize
         =
 
-        let map2InPlace =
-            ClArray.map2InPlace opAdd clContext workGroupSize
+        let map2InPlace = ClArray.map2InPlace opAdd clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) (leftVector: ClArray<'a option>) (rightVector: ClArray<'b option>) (resultVector: ClArray<'c option>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (leftVector: ClArray<'a option>)
+            (rightVector: ClArray<'b option>)
+            (resultVector: ClArray<'c option>) ->
 
             map2InPlace processor leftVector rightVector resultVector
 
@@ -40,10 +43,13 @@ module Vector =
         workGroupSize
         =
 
-        let map2 =
-            ClArray.map2 opAdd clContext workGroupSize
+        let map2 = ClArray.map2 opAdd clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (leftVector: ClArray<'a option>) (rightVector: ClArray<'b option>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (leftVector: ClArray<'a option>)
+            (rightVector: ClArray<'b option>) ->
 
             map2 processor allocationMode leftVector rightVector
 
@@ -57,25 +63,37 @@ module Vector =
         =
 
         let fillSubVectorKernel =
-            <@ fun (ndRange: Range1D) resultLength (leftVector: ClArray<'a option>) (maskVector: ClArray<'b option>) (value: ClCell<'a>) (resultVector: ClArray<'a option>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    resultLength
+                    (leftVector: ClArray<'a option>)
+                    (maskVector: ClArray<'b option>)
+                    (value: ClCell<'a>)
+                    (resultVector: ClArray<'a option>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < resultLength then
-                    resultVector.[gid] <- (%maskOp) leftVector.[gid] maskVector.[gid] value.Value @>
+                    if gid < resultLength then
+                        resultVector.[gid] <- (%maskOp) leftVector.[gid] maskVector.[gid] value.Value
+            @>
 
         let kernel = clContext.Compile(fillSubVectorKernel)
 
-        fun (processor: MailboxProcessor<_>) (leftVector: ClArray<'a option>) (maskVector: ClArray<'b option>) (value: ClCell<'a>) (resultVector: ClArray<'a option>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (leftVector: ClArray<'a option>)
+            (maskVector: ClArray<'b option>)
+            (value: ClCell<'a>)
+            (resultVector: ClArray<'a option>) ->
 
-            let ndRange =
-                Range1D.CreateValid(leftVector.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(leftVector.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () -> kernel.KernelFunc ndRange leftVector.Length leftVector maskVector value resultVector)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange leftVector.Length leftVector maskVector value resultVector)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -86,10 +104,14 @@ module Vector =
         workGroupSize
         =
 
-        let assignByMask =
-            assignByMaskInPlace maskOp clContext workGroupSize
+        let assignByMask = assignByMaskInPlace maskOp clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (leftVector: ClArray<'a option>) (maskVector: ClArray<'b option>) (value: ClCell<'a>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (leftVector: ClArray<'a option>)
+            (maskVector: ClArray<'b option>)
+            (value: ClCell<'a>) ->
             let resultVector =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, leftVector.Length)
 
@@ -99,20 +121,15 @@ module Vector =
 
     let toSparse<'a when 'a: struct> (clContext: ClContext) workGroupSize =
 
-        let scatterValues =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let scatterValues = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let scatterIndices =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let scatterIndices = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let getBitmap =
-            ClArray.map (Map.option 1 0) clContext workGroupSize
+        let getBitmap = ClArray.map (Map.option 1 0) clContext workGroupSize
 
-        let prefixSum =
-            Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let prefixSum = Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        let allIndices =
-            ClArray.init Map.id clContext workGroupSize
+        let allIndices = ClArray.init Map.id clContext workGroupSize
 
         let allValues =
             ClArray.map (Map.optionToValueOrZero Unchecked.defaultof<'a>) clContext workGroupSize
@@ -121,16 +138,13 @@ module Vector =
 
             let positions = getBitmap processor DeviceOnly vector
 
-            let resultLength =
-                (prefixSum processor positions)
-                    .ToHostAndFree(processor)
+            let resultLength = (prefixSum processor positions).ToHostAndFree(processor)
 
             // compute result indices
             let resultIndices =
                 clContext.CreateClArrayWithSpecificAllocationMode<int>(allocationMode, resultLength)
 
-            let allIndices =
-                allIndices processor DeviceOnly vector.Length
+            let allIndices = allIndices processor DeviceOnly vector.Length
 
             scatterIndices processor positions allIndices resultIndices
 
@@ -155,11 +169,9 @@ module Vector =
 
     let reduce<'a when 'a: struct> (opAdd: Expr<'a -> 'a -> 'a>) (clContext: ClContext) workGroupSize =
 
-        let choose =
-            ClArray.choose Map.id clContext workGroupSize
+        let choose = ClArray.choose Map.id clContext workGroupSize
 
-        let reduce =
-            Common.Reduce.reduce opAdd clContext workGroupSize
+        let reduce = Common.Reduce.reduce opAdd clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) (vector: ClArray<'a option>) ->
             choose processor DeviceOnly vector

@@ -16,19 +16,18 @@ let processor = Context.defaultContext.Queue
 
 let config =
     { Utils.defaultConfig with
-          arbitrary = [ typeof<Generators.Matrix.Sub> ] }
+        arbitrary = [ typeof<Generators.Matrix.Sub> ] }
 
-let makeTest isEqual zero testFun (array: 'a [,], sourceRow, count) =
+let makeTest isEqual zero testFun (array: 'a[,], sourceRow, count) =
 
-    let matrix =
-        Matrix.CSR.FromArray2D(array, isEqual zero)
+    let matrix = Matrix.CSR.FromArray2D(array, isEqual zero)
 
     if matrix.NNZ > 0 then
 
         let expected =
             array
             |> Array2D.mapi (fun rowIndex columnIndex value -> (value, rowIndex, columnIndex))
-            |> fun array -> array.[sourceRow..sourceRow + count - 1, *]
+            |> fun array -> array.[sourceRow .. sourceRow + count - 1, *]
             |> Seq.cast<'a * int * int>
             |> Seq.filter (fun (value, _, _) -> (not <| isEqual zero value))
             |> Seq.toArray

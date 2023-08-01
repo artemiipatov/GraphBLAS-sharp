@@ -15,70 +15,85 @@ module internal Radix =
     let private keyBitCount = 32
 
     let private localPrefixSum =
-        <@ fun (lid: int) (workGroupSize: int) (array: int []) ->
-            let mutable offset = 1
+        <@
+            fun (lid: int) (workGroupSize: int) (array: int[]) ->
+                let mutable offset = 1
 
-            while offset < workGroupSize do
-                barrierLocal ()
-                let mutable value = array.[lid]
+                while offset < workGroupSize do
+                    barrierLocal ()
+                    let mutable value = array.[lid]
 
-                if lid >= offset then
-                    value <- value + array.[lid - offset]
+                    if lid >= offset then
+                        value <- value + array.[lid - offset]
 
-                offset <- offset * 2
+                    offset <- offset * 2
 
-                barrierLocal ()
-                array.[lid] <- value @>
+                    barrierLocal ()
+                    array.[lid] <- value
+        @>
 
     let private count (clContext: ClContext) workGroupSize mask =
 
         let bitCount = mask + 1
 
         let kernel =
-            <@ fun (ndRange: Range1D) length (indices: ClArray<int>) (workGroupCount: ClCell<int>) (shift: ClCell<int>) (globalOffsets: ClArray<int>) (localOffsets: ClArray<int>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (indices: ClArray<int>)
+                    (workGroupCount: ClCell<int>)
+                    (shift: ClCell<int>)
+                    (globalOffsets: ClArray<int>)
+                    (localOffsets: ClArray<int>) ->
 
-                let gid = ndRange.GlobalID0
-                let lid = ndRange.LocalID0
+                    let gid = ndRange.GlobalID0
+                    let lid = ndRange.LocalID0
 
-                let position = (indices.[gid] >>> shift.Value) &&& mask
+                    let position = (indices.[gid] >>> shift.Value) &&& mask
 
-                let localMask = localArray<int> workGroupSize
+                    let localMask = localArray<int> workGroupSize
 
-                if gid < length then
-                    localMask.[lid] <- position
-                else
-                    localMask.[lid] <- 0
-
-                let localPositions = localArray<int> workGroupSize
-
-                for currentBit in 0 .. bitCount - 1 do
-                    let isCurrentPosition = localMask.[lid] = currentBit
-
-                    if isCurrentPosition && gid < length then
-                        localPositions.[lid] <- 1
+                    if gid < length then
+                        localMask.[lid] <- position
                     else
-                        localPositions.[lid] <- 0
+                        localMask.[lid] <- 0
 
-                    barrierLocal ()
+                    let localPositions = localArray<int> workGroupSize
 
-                    (%localPrefixSum) lid workGroupSize localPositions
+                    for currentBit in 0 .. bitCount - 1 do
+                        let isCurrentPosition = localMask.[lid] = currentBit
 
-                    barrierLocal ()
+                        if isCurrentPosition && gid < length then
+                            localPositions.[lid] <- 1
+                        else
+                            localPositions.[lid] <- 0
 
-                    if gid < length && isCurrentPosition then
-                        localOffsets.[gid] <- localPositions.[lid] - 1
+                        barrierLocal ()
 
-                    if lid = 0 then
-                        let processedItemsCount = localPositions.[workGroupSize - 1]
-                        let wgId = gid / workGroupSize
+                        (%localPrefixSum) lid workGroupSize localPositions
 
-                        globalOffsets.[workGroupCount.Value * currentBit + wgId] <- processedItemsCount @>
+                        barrierLocal ()
+
+                        if gid < length && isCurrentPosition then
+                            localOffsets.[gid] <- localPositions.[lid] - 1
+
+                        if lid = 0 then
+                            let processedItemsCount = localPositions.[workGroupSize - 1]
+
+                            let wgId = gid / workGroupSize
+
+                            globalOffsets.[workGroupCount.Value * currentBit + wgId] <- processedItemsCount
+            @>
 
         let kernel = clContext.Compile kernel
 
-        fun (processor: MailboxProcessor<_>) (indices: ClArray<int>) (clWorkGroupCount: ClCell<int>) (shift: ClCell<int>) ->
-            let ndRange =
-                Range1D.CreateValid(indices.Length, workGroupSize)
+        fun
+            (processor: MailboxProcessor<_>)
+            (indices: ClArray<int>)
+            (clWorkGroupCount: ClCell<int>)
+            (shift: ClCell<int>) ->
+            let ndRange = Range1D.CreateValid(indices.Length, workGroupSize)
 
             let workGroupCount = (indices.Length - 1) / workGroupSize + 1
 
@@ -93,16 +108,8 @@ module internal Radix =
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            indices.Length
-                            indices
-                            clWorkGroupCount
-                            shift
-                            globalOffsets
-                            localOffsets)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange indices.Length indices clWorkGroupCount shift globalOffsets localOffsets)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -112,38 +119,53 @@ module internal Radix =
     let private scatter (clContext: ClContext) workGroupSize mask =
 
         let kernel =
-            <@ fun (ndRange: Range1D) length (keys: ClArray<int>) (shift: ClCell<int>) (workGroupCount: ClCell<int>) (globalOffsets: ClArray<int>) (localOffsets: ClArray<int>) (result: ClArray<int>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (keys: ClArray<int>)
+                    (shift: ClCell<int>)
+                    (workGroupCount: ClCell<int>)
+                    (globalOffsets: ClArray<int>)
+                    (localOffsets: ClArray<int>)
+                    (result: ClArray<int>) ->
 
-                let gid = ndRange.GlobalID0
-                let wgId = gid / workGroupSize
+                    let gid = ndRange.GlobalID0
 
-                let workGroupCount = workGroupCount.Value
+                    let wgId = gid / workGroupSize
 
-                if gid < length then
-                    let slot = (keys.[gid] >>> shift.Value) &&& mask
+                    let workGroupCount = workGroupCount.Value
 
-                    let localOffset = localOffsets.[gid]
+                    if gid < length then
+                        let slot = (keys.[gid] >>> shift.Value) &&& mask
 
-                    let globalOffset =
-                        globalOffsets.[workGroupCount * slot + wgId]
+                        let localOffset = localOffsets.[gid]
 
-                    let offset = globalOffset + localOffset
+                        let globalOffset = globalOffsets.[workGroupCount * slot + wgId]
 
-                    result.[offset] <- keys.[gid] @>
+                        let offset = globalOffset + localOffset
+
+                        result.[offset] <- keys.[gid]
+            @>
 
         let kernel = clContext.Compile kernel
 
-        fun (processor: MailboxProcessor<_>) (keys: ClArray<int>) (shift: ClCell<int>) (workGroupCount: ClCell<int>) (globalOffset: ClArray<int>) (localOffsets: ClArray<int>) (result: ClArray<int>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (keys: ClArray<int>)
+            (shift: ClCell<int>)
+            (workGroupCount: ClCell<int>)
+            (globalOffset: ClArray<int>)
+            (localOffsets: ClArray<int>)
+            (result: ClArray<int>) ->
 
-            let ndRange =
-                Range1D.CreateValid(keys.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(keys.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc ndRange keys.Length keys shift workGroupCount globalOffset localOffsets result)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange keys.Length keys shift workGroupCount globalOffset localOffsets result)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -155,8 +177,7 @@ module internal Radix =
 
         let count = count clContext workGroupSize mask
 
-        let prefixSum =
-            PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let prefixSum = PrefixSum.standardExcludeInPlace clContext workGroupSize
 
         let scatter = scatter clContext workGroupSize mask
 
@@ -169,19 +190,17 @@ module internal Radix =
                 let secondKeys =
                     clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, keys.Length)
 
-                let workGroupCount =
-                    clContext.CreateClCell((keys.Length - 1) / workGroupSize + 1)
+                let workGroupCount = clContext.CreateClCell((keys.Length - 1) / workGroupSize + 1)
 
                 let mutable pair = (firstKeys, secondKeys)
                 let swap (x, y) = y, x
 
                 let highBound = keyBitCount / bitCount - 1
 
-                for i in 0 .. highBound do
+                for i in 0..highBound do
                     let shift = clContext.CreateClCell(bitCount * i)
 
-                    let globalOffset, localOffset =
-                        count processor (fst pair) workGroupCount shift
+                    let globalOffset, localOffset = count processor (fst pair) workGroupCount shift
 
                     (prefixSum processor globalOffset).Free processor
 
@@ -202,49 +221,68 @@ module internal Radix =
     let private scatterByKey (clContext: ClContext) workGroupSize mask =
 
         let kernel =
-            <@ fun (ndRange: Range1D) length (keys: ClArray<int>) (values: ClArray<'a>) (shift: ClCell<int>) (workGroupCount: ClCell<int>) (globalOffsets: ClArray<int>) (localOffsets: ClArray<int>) (resultKeys: ClArray<int>) (resultValues: ClArray<'a>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (keys: ClArray<int>)
+                    (values: ClArray<'a>)
+                    (shift: ClCell<int>)
+                    (workGroupCount: ClCell<int>)
+                    (globalOffsets: ClArray<int>)
+                    (localOffsets: ClArray<int>)
+                    (resultKeys: ClArray<int>)
+                    (resultValues: ClArray<'a>) ->
 
-                let gid = ndRange.GlobalID0
-                let wgId = gid / workGroupSize
+                    let gid = ndRange.GlobalID0
 
-                let workGroupCount = workGroupCount.Value
+                    let wgId = gid / workGroupSize
 
-                if gid < length then
-                    let slot = (keys.[gid] >>> shift.Value) &&& mask
+                    let workGroupCount = workGroupCount.Value
 
-                    let localOffset = localOffsets.[gid]
+                    if gid < length then
+                        let slot = (keys.[gid] >>> shift.Value) &&& mask
 
-                    let globalOffset =
-                        globalOffsets.[workGroupCount * slot + wgId]
+                        let localOffset = localOffsets.[gid]
 
-                    let offset = globalOffset + localOffset
+                        let globalOffset = globalOffsets.[workGroupCount * slot + wgId]
 
-                    resultKeys.[offset] <- keys.[gid]
-                    resultValues.[offset] <- values.[gid] @>
+                        let offset = globalOffset + localOffset
+
+                        resultKeys.[offset] <- keys.[gid]
+                        resultValues.[offset] <- values.[gid]
+            @>
 
         let kernel = clContext.Compile kernel
 
-        fun (processor: MailboxProcessor<_>) (keys: ClArray<int>) (values: ClArray<'a>) (shift: ClCell<int>) (workGroupCount: ClCell<int>) (globalOffset: ClArray<int>) (localOffsets: ClArray<int>) (resultKeys: ClArray<int>) (resultValues: ClArray<'a>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (keys: ClArray<int>)
+            (values: ClArray<'a>)
+            (shift: ClCell<int>)
+            (workGroupCount: ClCell<int>)
+            (globalOffset: ClArray<int>)
+            (localOffsets: ClArray<int>)
+            (resultKeys: ClArray<int>)
+            (resultValues: ClArray<'a>) ->
 
-            let ndRange =
-                Range1D.CreateValid(keys.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(keys.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            keys.Length
-                            keys
-                            values
-                            shift
-                            workGroupCount
-                            globalOffset
-                            localOffsets
-                            resultKeys
-                            resultValues)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc
+                        ndRange
+                        keys.Length
+                        keys
+                        values
+                        shift
+                        workGroupCount
+                        globalOffset
+                        localOffsets
+                        resultKeys
+                        resultValues)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -258,11 +296,9 @@ module internal Radix =
 
         let count = count clContext workGroupSize mask
 
-        let prefixSum =
-            PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let prefixSum = PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        let scatterByKey =
-            scatterByKey clContext workGroupSize mask
+        let scatterByKey = scatterByKey clContext workGroupSize mask
 
         fun (processor: MailboxProcessor<_>) allocationMode (keys: ClArray<int>) (values: ClArray<'a>) ->
             if values.Length <> keys.Length then
@@ -281,8 +317,7 @@ module internal Radix =
                 let secondValues =
                     clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, values.Length)
 
-                let workGroupCount =
-                    clContext.CreateClCell((keys.Length - 1) / workGroupSize + 1)
+                let workGroupCount = clContext.CreateClCell((keys.Length - 1) / workGroupSize + 1)
 
                 let mutable keysPair = (firstKeys, secondKeys)
                 let mutable valuesPair = (firstValues, secondValues)
@@ -291,7 +326,7 @@ module internal Radix =
                 // compute bound of iterations
                 let highBound = keyBitCount / bitCount - 1
 
-                for i in 0 .. highBound do
+                for i in 0..highBound do
                     let shift = clContext.CreateClCell(bitCount * i)
 
                     let currentKeys = fst keysPair
@@ -300,8 +335,7 @@ module internal Radix =
                     let currentValues = fst valuesPair
                     let resultValuesBuffer = snd valuesPair
 
-                    let globalOffset, localOffset =
-                        count processor currentKeys workGroupCount shift
+                    let globalOffset, localOffset = count processor currentKeys workGroupCount shift
 
                     (prefixSum processor globalOffset).Free processor
 

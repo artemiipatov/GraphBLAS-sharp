@@ -65,14 +65,11 @@ module Matrix =
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.COO<'a>) ->
 
-            let resultRows =
-                copy processor allocationMode matrix.Rows
+            let resultRows = copy processor allocationMode matrix.Rows
 
-            let resultColumns =
-                copy processor allocationMode matrix.Columns
+            let resultColumns = copy processor allocationMode matrix.Columns
 
-            let resultValues =
-                copyData processor allocationMode matrix.Values
+            let resultValues = copyData processor allocationMode matrix.Values
 
             { Context = clContext
               RowIndices = resultRows
@@ -87,15 +84,17 @@ module Matrix =
     let private compressRows (clContext: ClContext) workGroupSize =
 
         let compressRows =
-            <@ fun (ndRange: Range1D) (rows: ClArray<int>) (nnz: int) (rowPointers: ClArray<int>) ->
+            <@
+                fun (ndRange: Range1D) (rows: ClArray<int>) (nnz: int) (rowPointers: ClArray<int>) ->
 
-                let i = ndRange.GlobalID0
+                    let i = ndRange.GlobalID0
 
-                if i < nnz then
-                    let row = rows.[i]
+                    if i < nnz then
+                        let row = rows.[i]
 
-                    if i = 0 || row <> rows.[i - 1] then
-                        rowPointers.[row] <- i @>
+                        if i = 0 || row <> rows.[i - 1] then
+                            rowPointers.[row] <- i
+            @>
 
         let program = clContext.Compile(compressRows)
 
@@ -108,13 +107,14 @@ module Matrix =
 
             let nnz = rowIndices.Length
 
-            let rowPointers =
-                create processor allocationMode (rowCount + 1) nnz
+            let rowPointers = create processor allocationMode (rowCount + 1) nnz
 
             let kernel = program.GetKernel()
 
             let ndRange = Range1D.CreateValid(nnz, workGroupSize)
+
             processor.Post(Msg.MsgSetArguments(fun () -> kernel.KernelFunc ndRange rowIndices nnz rowPointers))
+
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
 
             (scan processor rowPointers nnz).Free processor
@@ -135,14 +135,11 @@ module Matrix =
         let copyData = ClArray.copy clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.COO<'a>) ->
-            let rowPointers =
-                prepare processor allocationMode matrix.Rows matrix.RowCount
+            let rowPointers = prepare processor allocationMode matrix.Rows matrix.RowCount
 
-            let cols =
-                copy processor allocationMode matrix.Columns
+            let cols = copy processor allocationMode matrix.Columns
 
-            let values =
-                copyData processor allocationMode matrix.Values
+            let values = copyData processor allocationMode matrix.Values
 
             { Context = clContext
               RowCount = matrix.RowCount
@@ -161,8 +158,7 @@ module Matrix =
         let prepare = compressRows clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.COO<'a>) ->
-            let rowPointers =
-                prepare processor allocationMode matrix.Rows matrix.RowCount
+            let rowPointers = prepare processor allocationMode matrix.Rows matrix.RowCount
 
             matrix.Rows.Free processor
 
@@ -181,8 +177,7 @@ module Matrix =
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let transposeInPlace (clContext: ClContext) workGroupSize =
 
-        let sort =
-            Common.Sort.Bitonic.sortKeyValuesInplace clContext workGroupSize
+        let sort = Common.Sort.Bitonic.sortKeyValuesInplace clContext workGroupSize
 
         fun (queue: MailboxProcessor<_>) (matrix: ClMatrix.COO<'a>) ->
             sort queue matrix.Columns matrix.Rows matrix.Values

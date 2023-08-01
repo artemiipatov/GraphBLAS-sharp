@@ -14,9 +14,9 @@ let processor = Context.defaultContext.Queue
 
 let config =
     { Utils.defaultConfig with
-          arbitrary = [ typeof<Generators.Sub> ] }
+        arbitrary = [ typeof<Generators.Sub> ] }
 
-let makeTestGetChunk<'a when 'a: equality> testFun (array: 'a [], startPosition, count) =
+let makeTestGetChunk<'a when 'a: equality> testFun (array: 'a[], startPosition, count) =
 
     if array.Length > 0 then
 
@@ -47,29 +47,25 @@ let subTests =
       creatTestSub<byte> ]
     |> testList "getChunk"
 
-let makeTestChunkBySize<'a when 'a: equality> isEqual testFun (array: 'a [], chunkSize: int) =
+let makeTestChunkBySize<'a when 'a: equality> isEqual testFun (array: 'a[], chunkSize: int) =
 
     if chunkSize > 0 && array.Length > 0 then
 
         let clArray = context.CreateClArray array
 
-        let clActual: ClArray<'a> [] =
-            (testFun processor HostInterop chunkSize clArray)
+        let clActual: ClArray<'a>[] = (testFun processor HostInterop chunkSize clArray)
 
         clArray.Free processor
 
-        let actual =
-            clActual
-            |> Array.map (fun clArray -> clArray.ToHostAndFree processor)
+        let actual = clActual |> Array.map (fun clArray -> clArray.ToHostAndFree processor)
 
         let expected = Array.chunkBySize chunkSize array
 
-        "Results must be the same"
-        |> Utils.compareChunksArrays isEqual actual expected
+        "Results must be the same" |> Utils.compareChunksArrays isEqual actual expected
 
 let chunkBySizeConfig =
     { config with
-          arbitrary = [ typeof<Generators.ChunkBySize> ] }
+        arbitrary = [ typeof<Generators.ChunkBySize> ] }
 
 let creatTestChunkBySize<'a when 'a: equality> isEqual =
     ClArray.chunkBySize context Utils.defaultWorkGroupSize
@@ -106,9 +102,4 @@ let lazyChunkBySizeTests =
       creatTestChunkBySizeLazy<byte> (=) ]
     |> testList "chunkBySize lazy"
 
-let allTests =
-    testList
-        "chunk"
-        [ subTests
-          chunkBySizeTests
-          lazyChunkBySizeTests ]
+let allTests = testList "chunk" [ subTests; chunkBySizeTests; lazyChunkBySizeTests ]

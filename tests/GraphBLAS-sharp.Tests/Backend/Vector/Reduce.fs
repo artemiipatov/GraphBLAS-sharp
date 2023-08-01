@@ -15,16 +15,14 @@ let wgSize = Utils.defaultWorkGroupSize
 
 let config = Utils.defaultConfig
 
-let checkResult zero op (actual: 'a) (vector: 'a []) =
+let checkResult zero op (actual: 'a) (vector: 'a[]) =
     let expected = Array.fold op zero vector
 
-    "Results should be the same"
-    |> Expect.equal actual expected
+    "Results should be the same" |> Expect.equal actual expected
 
-let correctnessGenericTest isEqual zero op reduce case (array: 'a []) =
+let correctnessGenericTest isEqual zero op reduce case (array: 'a[]) =
 
-    let vector =
-        Utils.createVectorFromArray case.Format array (isEqual zero)
+    let vector = Utils.createVectorFromArray case.Format array (isEqual zero)
 
     if vector.NNZ > 0 then
         let q = case.TestContext.Queue
@@ -32,8 +30,7 @@ let correctnessGenericTest isEqual zero op reduce case (array: 'a []) =
 
         let clVector = vector.ToDevice context
 
-        let result =
-            (reduce q clVector: ClCell<_>).ToHostAndFree q
+        let result = (reduce q clVector: ClCell<_>).ToHostAndFree q
 
         checkResult zero op result array
 
@@ -73,5 +70,4 @@ let testFixtures case =
       createTest<bool> case (=) false (||) <@ (||) @> "add"
       createTest<bool> case (=) true (&&) <@ (&&) @> "multiply" ]
 
-let tests =
-    operationGPUTests "Reduce tests" testFixtures
+let tests = operationGPUTests "Reduce tests" testFixtures

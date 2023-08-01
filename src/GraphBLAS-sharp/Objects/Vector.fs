@@ -7,8 +7,8 @@ open GraphBLAS.FSharp.Objects.ClVector
 
 module Vector =
     type Sparse<'a> =
-        { Indices: int []
-          Values: 'a []
+        { Indices: int[]
+          Values: 'a[]
           Size: int }
 
         override this.ToString() =
@@ -27,12 +27,12 @@ module Vector =
               Values = values
               Size = this.Size }
 
-        static member FromTuples(indices: int [], values: 'a [], size: int) =
+        static member FromTuples(indices: int[], values: 'a[], size: int) =
             { Indices = indices
               Values = values
               Size = size }
 
-        static member FromArray(array: 'a [], isZero: 'a -> bool) =
+        static member FromArray(array: 'a[], isZero: 'a -> bool) =
             let indices, values =
                 array
                 |> Seq.mapi (fun idx v -> (idx, v))
@@ -49,7 +49,8 @@ open Vector
 [<RequireQualifiedAccess>]
 type Vector<'a when 'a: struct> =
     | Sparse of Vector.Sparse<'a>
-    | Dense of 'a option []
+    | Dense of 'a option[]
+
     member this.Size =
         match this with
         | Sparse vector -> vector.Size

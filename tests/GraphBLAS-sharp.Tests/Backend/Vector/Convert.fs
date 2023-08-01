@@ -11,8 +11,7 @@ open GraphBLAS.FSharp.Objects
 open GraphBLAS.FSharp.Objects.ClVectorExtensions
 open GraphBLAS.FSharp.Objects.ClContextExtensions
 
-let logger =
-    Log.create "Backend.Vector.Convert.Tests"
+let logger = Log.create "Backend.Vector.Convert.Tests"
 
 let config = Utils.defaultConfig
 
@@ -23,11 +22,10 @@ let makeTest
     (convertFun: MailboxProcessor<_> -> AllocationFlag -> ClVector<'a> -> ClVector<'a>)
     isZero
     case
-    (array: 'a [])
+    (array: 'a[])
     =
 
-    let vector =
-        Utils.createVectorFromArray formatFrom array isZero
+    let vector = Utils.createVectorFromArray formatFrom array isZero
 
     if vector.NNZ > 0 then
 
@@ -45,13 +43,9 @@ let makeTest
 
             res
 
-        logger.debug (
-            eventX "Actual is {actual}"
-            >> setField "actual" $"%A{actual}"
-        )
+        logger.debug (eventX "Actual is {actual}" >> setField "actual" $"%A{actual}")
 
-        let expected =
-            Utils.createVectorFromArray case.Format array isZero
+        let expected = Utils.createVectorFromArray case.Format array isZero
 
         Expect.equal actual expected "Vectors must be the same"
 
@@ -69,36 +63,31 @@ let testFixtures case =
         [ let convertFun = Vector.toSparse context wgSize
 
           Utils.listOfUnionCases<VectorFormat>
-          |> List.map
-              (fun formatFrom ->
-                  makeTest formatFrom convertFun ((=) 0) case
-                  |> testPropertyWithConfig config (getCorrectnessTestName "int" formatFrom))
+          |> List.map (fun formatFrom ->
+              makeTest formatFrom convertFun ((=) 0) case
+              |> testPropertyWithConfig config (getCorrectnessTestName "int" formatFrom))
 
           let convertFun = Vector.toSparse context wgSize
 
           Utils.listOfUnionCases<VectorFormat>
-          |> List.map
-              (fun formatFrom ->
-                  makeTest formatFrom convertFun ((=) false) case
-                  |> testPropertyWithConfig config (getCorrectnessTestName "bool" formatFrom)) ]
+          |> List.map (fun formatFrom ->
+              makeTest formatFrom convertFun ((=) false) case
+              |> testPropertyWithConfig config (getCorrectnessTestName "bool" formatFrom)) ]
         |> List.concat
     | Dense ->
         [ let convertFun = Vector.toDense context wgSize
 
           Utils.listOfUnionCases<VectorFormat>
-          |> List.map
-              (fun formatFrom ->
-                  makeTest formatFrom convertFun ((=) 0) case
-                  |> testPropertyWithConfig config (getCorrectnessTestName "int" formatFrom))
+          |> List.map (fun formatFrom ->
+              makeTest formatFrom convertFun ((=) 0) case
+              |> testPropertyWithConfig config (getCorrectnessTestName "int" formatFrom))
 
           let convertFun = Vector.toDense context wgSize
 
           Utils.listOfUnionCases<VectorFormat>
-          |> List.map
-              (fun formatFrom ->
-                  makeTest formatFrom convertFun ((=) false) case
-                  |> testPropertyWithConfig config (getCorrectnessTestName "bool" formatFrom)) ]
+          |> List.map (fun formatFrom ->
+              makeTest formatFrom convertFun ((=) false) case
+              |> testPropertyWithConfig config (getCorrectnessTestName "bool" formatFrom)) ]
         |> List.concat
 
-let tests =
-    operationGPUTests "Backend.Vector.Convert tests" testFixtures
+let tests = operationGPUTests "Backend.Vector.Convert tests" testFixtures

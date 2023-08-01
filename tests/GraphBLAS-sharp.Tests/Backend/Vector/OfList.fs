@@ -19,8 +19,8 @@ let wgSize = Utils.defaultWorkGroupSize
 
 let checkResult
     (isEqual: 'a -> 'a -> bool)
-    (expectedIndices: int [])
-    (expectedValues: 'a [])
+    (expectedIndices: int[])
+    (expectedValues: 'a[])
     (actual: Vector<'a>)
     actualSize
     =
@@ -38,27 +38,21 @@ let correctnessGenericTest<'a when 'a: struct>
     (ofList: MailboxProcessor<_> -> AllocationFlag -> VectorFormat -> int -> (int * 'a) list -> ClVector<'a>)
     (toCoo: MailboxProcessor<_> -> AllocationFlag -> ClVector<'a> -> ClVector<'a>)
     (case: OperationCase<VectorFormat>)
-    (elements: (int * 'a) [])
+    (elements: (int * 'a)[])
     (sizeDelta: int)
     =
 
-    let elements =
-        elements |> Array.distinctBy fst |> List.ofArray
+    let elements = elements |> Array.distinctBy fst |> List.ofArray
 
     if elements.Length > 0 then
 
         let q = case.TestContext.Queue
 
-        let indices, values =
-            elements
-            |> Array.ofList
-            |> Array.sortBy fst
-            |> Array.unzip
+        let indices, values = elements |> Array.ofList |> Array.sortBy fst |> Array.unzip
 
         let actualSize = (Array.max indices) + abs sizeDelta + 1
 
-        let clActual =
-            ofList q HostInterop case.Format actualSize elements
+        let clActual = ofList q HostInterop case.Format actualSize elements
 
         let clCooActual = toCoo q HostInterop clActual
 
@@ -99,5 +93,4 @@ let testFixtures (case: OperationCase<VectorFormat>) =
 
       creatTest<float32> case ]
 
-let tests =
-    operationGPUTests "Backend.Vector.ofList tests" testFixtures
+let tests = operationGPUTests "Backend.Vector.ofList tests" testFixtures

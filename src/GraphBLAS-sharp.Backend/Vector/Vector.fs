@@ -18,8 +18,7 @@ module Vector =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let zeroCreate (clContext: ClContext) workGroupSize =
-        let zeroCreate =
-            ClArray.zeroCreate clContext workGroupSize
+        let zeroCreate = ClArray.zeroCreate clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode size format ->
             match format with
@@ -28,14 +27,9 @@ module Vector =
                     { Context = clContext
                       Indices = clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, [| 0 |])
                       Values =
-                          clContext.CreateClArrayWithSpecificAllocationMode(
-                              allocationMode,
-                              [| Unchecked.defaultof<'a> |]
-                          ) // TODO empty vector
+                        clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, [| Unchecked.defaultof<'a> |]) // TODO empty vector
                       Size = size }
-            | Dense ->
-                ClVector.Dense
-                <| zeroCreate processor allocationMode size
+            | Dense -> ClVector.Dense <| zeroCreate processor allocationMode size
 
     /// <summary>
     /// Builds vector of given format with fixed size and fills it with the values from the given list.
@@ -43,23 +37,16 @@ module Vector =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let ofList (clContext: ClContext) workGroupSize =
-        let scatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let scatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let zeroCreate =
-            ClArray.zeroCreate clContext workGroupSize
+        let zeroCreate = ClArray.zeroCreate clContext workGroupSize
 
-        let map =
-            ClArray.map <@ Some @> clContext workGroupSize
+        let map = ClArray.map <@ Some @> clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode format size (elements: (int * 'a) list) ->
             match format with
             | Sparse ->
-                let indices, values =
-                    elements
-                    |> Array.ofList
-                    |> Array.sortBy fst
-                    |> Array.unzip
+                let indices, values = elements |> Array.ofList |> Array.sortBy fst |> Array.unzip
 
                 { Context = clContext
                   Indices = clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, indices)
@@ -69,11 +56,9 @@ module Vector =
             | Dense ->
                 let indices, values = elements |> Array.ofList |> Array.unzip
 
-                let values =
-                    clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, values)
+                let values = clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, values)
 
-                let indices =
-                    clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, indices)
+                let indices = clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, indices)
 
                 let mappedValues = map processor DeviceOnly values
 
@@ -94,19 +79,14 @@ module Vector =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let copy (clContext: ClContext) workGroupSize =
-        let sparseCopy =
-            Sparse.Vector.copy clContext workGroupSize
+        let sparseCopy = Sparse.Vector.copy clContext workGroupSize
 
         let copyOptionData = ClArray.copy clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (vector: ClVector<'a>) ->
             match vector with
-            | ClVector.Sparse vector ->
-                ClVector.Sparse
-                <| sparseCopy processor allocationMode vector
-            | ClVector.Dense vector ->
-                ClVector.Dense
-                <| copyOptionData processor allocationMode vector
+            | ClVector.Sparse vector -> ClVector.Sparse <| sparseCopy processor allocationMode vector
+            | ClVector.Dense vector -> ClVector.Dense <| copyOptionData processor allocationMode vector
 
     /// <summary>
     /// Sparsifies the given vector if it is in a dense format.
@@ -115,16 +95,13 @@ module Vector =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let toSparse (clContext: ClContext) workGroupSize =
-        let toSparse =
-            Dense.Vector.toSparse clContext workGroupSize
+        let toSparse = Dense.Vector.toSparse clContext workGroupSize
 
         let copy = copy clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (vector: ClVector<'a>) ->
             match vector with
-            | ClVector.Dense vector ->
-                ClVector.Sparse
-                <| toSparse processor allocationMode vector
+            | ClVector.Dense vector -> ClVector.Sparse <| toSparse processor allocationMode vector
             | ClVector.Sparse _ -> copy processor allocationMode vector
 
     /// <summary>
@@ -134,36 +111,32 @@ module Vector =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let toDense (clContext: ClContext) workGroupSize =
-        let toDense =
-            Sparse.Vector.toDense clContext workGroupSize
+        let toDense = Sparse.Vector.toDense clContext workGroupSize
 
         let copy = ClArray.copy clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (vector: ClVector<'a>) ->
             match vector with
-            | ClVector.Dense vector ->
-                ClVector.Dense
-                <| copy processor allocationMode vector
-            | ClVector.Sparse vector ->
-                ClVector.Dense
-                <| toDense processor allocationMode vector
+            | ClVector.Dense vector -> ClVector.Dense <| copy processor allocationMode vector
+            | ClVector.Sparse vector -> ClVector.Dense <| toDense processor allocationMode vector
 
     let private assignByMaskGeneral<'a, 'b when 'a: struct and 'b: struct> op (clContext: ClContext) workGroupSize =
 
-        let sparseFillVector =
-            Sparse.Vector.assignByMask op clContext workGroupSize
+        let sparseFillVector = Sparse.Vector.assignByMask op clContext workGroupSize
 
-        let denseFillVector =
-            Dense.Vector.assignByMask op clContext workGroupSize
+        let denseFillVector = Dense.Vector.assignByMask op clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (vector: ClVector<'a>) (mask: ClVector<'b>) (value: ClCell<'a>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (vector: ClVector<'a>)
+            (mask: ClVector<'b>)
+            (value: ClCell<'a>) ->
             match vector, mask with
             | ClVector.Sparse vector, ClVector.Sparse mask ->
-                ClVector.Sparse
-                <| sparseFillVector processor allocationMode vector mask value
+                ClVector.Sparse <| sparseFillVector processor allocationMode vector mask value
             | ClVector.Dense vector, ClVector.Dense mask ->
-                ClVector.Dense
-                <| denseFillVector processor allocationMode vector mask value
+                ClVector.Dense <| denseFillVector processor allocationMode vector mask value
             | _ -> failwith "Vector formats are not matching."
 
     let assignByMask<'a, 'b when 'a: struct and 'b: struct> op clContext workGroupSize =
@@ -185,11 +158,9 @@ module Vector =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let reduce (opAdd: Expr<'a -> 'a -> 'a>) (clContext: ClContext) workGroupSize =
-        let sparseReduce =
-            Sparse.Vector.reduce opAdd clContext workGroupSize
+        let sparseReduce = Sparse.Vector.reduce opAdd clContext workGroupSize
 
-        let denseReduce =
-            Dense.Vector.reduce opAdd clContext workGroupSize
+        let denseReduce = Dense.Vector.reduce opAdd clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) (vector: ClVector<'a>) ->
             match vector with

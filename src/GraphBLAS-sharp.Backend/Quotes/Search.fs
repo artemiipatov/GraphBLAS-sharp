@@ -16,112 +16,121 @@ module Search =
         /// left edge and right edge should be less than the length of the index array.
         /// </remarks>
         let inRange<'a> =
-            <@ fun leftEdge rightEdge sourceIndex (indices: ClArray<int>) (values: ClArray<'a>) ->
+            <@
+                fun leftEdge rightEdge sourceIndex (indices: ClArray<int>) (values: ClArray<'a>) ->
 
-                let mutable leftEdge = leftEdge
-                let mutable rightEdge = rightEdge
+                    let mutable leftEdge = leftEdge
+                    let mutable rightEdge = rightEdge
 
-                let mutable result = None
+                    let mutable result = None
 
-                while leftEdge <= rightEdge do
-                    let middleIdx = (leftEdge + rightEdge) / 2
+                    while leftEdge <= rightEdge do
+                        let middleIdx = (leftEdge + rightEdge) / 2
 
-                    let currentColumn = indices.[middleIdx]
+                        let currentColumn = indices.[middleIdx]
 
-                    if sourceIndex = currentColumn then
-                        result <- Some values.[middleIdx]
+                        if sourceIndex = currentColumn then
+                            result <- Some values.[middleIdx]
 
-                        rightEdge <- -1 // TODO() break
-                    elif sourceIndex < currentColumn then
-                        rightEdge <- middleIdx - 1
-                    else
-                        leftEdge <- middleIdx + 1
+                            rightEdge <- -1 // TODO() break
+                        elif sourceIndex < currentColumn then
+                            rightEdge <- middleIdx - 1
+                        else
+                            leftEdge <- middleIdx + 1
 
-                result @>
+                    result
+            @>
 
         /// <summary>
         /// Searches value in array by key.
         /// In case there is a value at the given key position, it is returned.
         /// </summary>
         let byKey<'a> =
-            <@ fun length sourceIndex (keys: ClArray<int>) (values: ClArray<'a>) ->
+            <@
+                fun length sourceIndex (keys: ClArray<int>) (values: ClArray<'a>) ->
 
-                let mutable leftEdge = 0
-                let mutable rightEdge = length - 1
+                    let mutable leftEdge = 0
+                    let mutable rightEdge = length - 1
 
-                let mutable result = None
+                    let mutable result = None
 
-                while leftEdge <= rightEdge do
-                    let middleIdx = (leftEdge + rightEdge) / 2
-                    let currentIndex = keys.[middleIdx]
+                    while leftEdge <= rightEdge do
+                        let middleIdx = (leftEdge + rightEdge) / 2
 
-                    if sourceIndex = currentIndex then
-                        result <- Some values.[middleIdx]
+                        let currentIndex = keys.[middleIdx]
 
-                        rightEdge <- -1 // TODO() break
-                    elif sourceIndex < currentIndex then
-                        rightEdge <- middleIdx - 1
-                    else
-                        leftEdge <- middleIdx + 1
+                        if sourceIndex = currentIndex then
+                            result <- Some values.[middleIdx]
 
-                result @>
+                            rightEdge <- -1 // TODO() break
+                        elif sourceIndex < currentIndex then
+                            rightEdge <- middleIdx - 1
+                        else
+                            leftEdge <- middleIdx + 1
+
+                    result
+            @>
 
         /// <summary>
         /// Searches value in array by two keys.
         /// In case there is a value at the given keys position, it is returned.
         /// </summary>
         let byKey2D<'a> =
-            <@ fun length sourceIndex (rowIndices: ClArray<int>) (columnIndices: ClArray<int>) (values: ClArray<'a>) ->
+            <@
+                fun length sourceIndex (rowIndices: ClArray<int>) (columnIndices: ClArray<int>) (values: ClArray<'a>) ->
 
-                let mutable leftEdge = 0
-                let mutable rightEdge = length - 1
+                    let mutable leftEdge = 0
+                    let mutable rightEdge = length - 1
 
-                let mutable result = None
+                    let mutable result = None
 
-                while leftEdge <= rightEdge do
-                    let middleIdx = (leftEdge + rightEdge) / 2
+                    while leftEdge <= rightEdge do
+                        let middleIdx = (leftEdge + rightEdge) / 2
 
-                    let currentIndex: uint64 =
-                        ((uint64 rowIndices.[middleIdx]) <<< 32)
-                        ||| (uint64 columnIndices.[middleIdx])
+                        let currentIndex: uint64 =
+                            ((uint64 rowIndices.[middleIdx]) <<< 32) ||| (uint64 columnIndices.[middleIdx])
 
-                    if sourceIndex = currentIndex then
-                        result <- Some values.[middleIdx]
+                        if sourceIndex = currentIndex then
+                            result <- Some values.[middleIdx]
 
-                        rightEdge <- -1 // TODO() break
-                    elif sourceIndex < currentIndex then
-                        rightEdge <- middleIdx - 1
-                    else
-                        leftEdge <- middleIdx + 1
+                            rightEdge <- -1 // TODO() break
+                        elif sourceIndex < currentIndex then
+                            rightEdge <- middleIdx - 1
+                        else
+                            leftEdge <- middleIdx + 1
 
-                result @>
+                    result
+            @>
 
         /// <summary>
         /// Find lower position of item in array.
         /// </summary>
         let lowerPosition<'a when 'a: equality and 'a: comparison> =
-            <@ fun length sourceItem (keys: 'a []) ->
+            <@
+                fun length sourceItem (keys: 'a[]) ->
 
-                let mutable leftEdge = 0
-                let mutable rightEdge = length - 1
+                    let mutable leftEdge = 0
+                    let mutable rightEdge = length - 1
 
-                let mutable resultPosition = None
+                    let mutable resultPosition = None
 
-                while leftEdge <= rightEdge do
-                    let currentPosition = (leftEdge + rightEdge) / 2
-                    let currentKey = keys.[currentPosition]
+                    while leftEdge <= rightEdge do
+                        let currentPosition = (leftEdge + rightEdge) / 2
 
-                    if sourceItem = currentKey then
-                        // remember positions and move left
-                        resultPosition <- Some currentPosition
+                        let currentKey = keys.[currentPosition]
 
-                        rightEdge <- currentPosition - 1
-                    elif sourceItem < currentKey then
-                        rightEdge <- currentPosition - 1
-                    else
-                        leftEdge <- currentPosition + 1
+                        if sourceItem = currentKey then
+                            // remember positions and move left
+                            resultPosition <- Some currentPosition
 
-                resultPosition @>
+                            rightEdge <- currentPosition - 1
+                        elif sourceItem < currentKey then
+                            rightEdge <- currentPosition - 1
+                        else
+                            leftEdge <- currentPosition + 1
+
+                    resultPosition
+            @>
 
         /// <summary>
         /// lowerBound is a version of binary search: it attempts to find the element value in an ordered range [first, last).
@@ -140,51 +149,57 @@ module Search =
         /// </code>
         /// </example>
         let lowerBound<'a when 'a: comparison> =
-            <@ fun length sourceItem (keys: ClArray<'a>) ->
+            <@
+                fun length sourceItem (keys: ClArray<'a>) ->
 
-                let mutable leftEdge = 0
-                let mutable rightEdge = length - 1
+                    let mutable leftEdge = 0
+                    let mutable rightEdge = length - 1
 
-                let mutable resultPosition = 0
+                    let mutable resultPosition = 0
 
-                if sourceItem >= keys.[length - 1] then
-                    length - 1
-                else
-                    while leftEdge <= rightEdge do
-                        let currentPosition = (leftEdge + rightEdge) / 2
-                        let currentKey = keys.[currentPosition]
+                    if sourceItem >= keys.[length - 1] then
+                        length - 1
+                    else
+                        while leftEdge <= rightEdge do
+                            let currentPosition = (leftEdge + rightEdge) / 2
 
-                        if sourceItem < currentKey then
-                            resultPosition <- currentPosition
+                            let currentKey = keys.[currentPosition]
 
-                            rightEdge <- currentPosition - 1
-                        else
-                            leftEdge <- currentPosition + 1
+                            if sourceItem < currentKey then
+                                resultPosition <- currentPosition
 
-                    resultPosition @>
+                                rightEdge <- currentPosition - 1
+                            else
+                                leftEdge <- currentPosition + 1
+
+                        resultPosition
+            @>
 
         let lowerBoundAndValue<'a when 'a: comparison> =
             let defaultValue = Unchecked.defaultof<'a>
 
-            <@ fun length sourceItem (keys: ClArray<'a>) ->
+            <@
+                fun length sourceItem (keys: ClArray<'a>) ->
 
-                let mutable leftEdge = 0
-                let mutable rightEdge = length - 1
+                    let mutable leftEdge = 0
+                    let mutable rightEdge = length - 1
 
-                let mutable resultPosition = 0, defaultValue
+                    let mutable resultPosition = 0, defaultValue
 
-                if sourceItem >= keys.[length - 1] then
-                    (length - 1), keys.[length - 1]
-                else
-                    while leftEdge <= rightEdge do
-                        let currentPosition = (leftEdge + rightEdge) / 2
-                        let currentKey = keys.[currentPosition]
+                    if sourceItem >= keys.[length - 1] then
+                        (length - 1), keys.[length - 1]
+                    else
+                        while leftEdge <= rightEdge do
+                            let currentPosition = (leftEdge + rightEdge) / 2
 
-                        if sourceItem < currentKey then
-                            resultPosition <- currentPosition, currentKey
+                            let currentKey = keys.[currentPosition]
 
-                            rightEdge <- currentPosition - 1
-                        else
-                            leftEdge <- currentPosition + 1
+                            if sourceItem < currentKey then
+                                resultPosition <- currentPosition, currentKey
 
-                    resultPosition @>
+                                rightEdge <- currentPosition - 1
+                            else
+                                leftEdge <- currentPosition + 1
+
+                        resultPosition
+            @>

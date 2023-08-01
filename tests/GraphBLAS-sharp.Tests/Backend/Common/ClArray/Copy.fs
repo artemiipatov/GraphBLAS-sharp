@@ -23,19 +23,13 @@ let makeTest<'a when 'a: equality> copyFun (array: array<'a>) =
     if array.Length > 0 then
         let clArray = context.CreateClArray array
 
-        let actual =
-            (copyFun q HostInterop clArray: ClArray<_>)
-                .ToHostAndFree q
+        let actual = (copyFun q HostInterop clArray: ClArray<_>).ToHostAndFree q
 
         clArray.Free q
 
-        logger.debug (
-            eventX "Actual is {actual}"
-            >> setField "actual" $"%A{actual}"
-        )
+        logger.debug (eventX "Actual is {actual}" >> setField "actual" $"%A{actual}")
 
-        "Array should be equals to original"
-        |> Expect.sequenceEqual actual array
+        "Array should be equals to original" |> Expect.sequenceEqual actual array
 
 let creatTest<'a when 'a: equality> =
     ClArray.copy context wgSize
@@ -54,5 +48,4 @@ let testCases =
       creatTest<float32>
       creatTest<byte> ]
 
-let tests =
-    testCases |> testList "ClArray.copy tests"
+let tests = testCases |> testList "ClArray.copy tests"

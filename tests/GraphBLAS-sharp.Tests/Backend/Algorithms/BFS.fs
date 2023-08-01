@@ -16,8 +16,7 @@ let testFixtures (testContext: TestContext) =
       let queue = testContext.Queue
       let workGroupSize = Utils.defaultWorkGroupSize
 
-      let testName =
-          sprintf "Test on %A" testContext.ClContext
+      let testName = sprintf "Test on %A" testContext.ClContext
 
       let bfs =
           Algorithms.BFS.singleSource
@@ -27,12 +26,11 @@ let testFixtures (testContext: TestContext) =
               workGroupSize
 
       testPropertyWithConfig config testName
-      <| fun (matrix: int [,]) ->
+      <| fun (matrix: int[,]) ->
 
           let graph = undirectedFromArray2D matrix 0
 
-          let largestComponent =
-              ConnectedComponents.largestComponent graph
+          let largestComponent = ConnectedComponents.largestComponent graph
 
           if largestComponent.Length > 0 then
               let source = largestComponent.[0]
@@ -41,15 +39,13 @@ let testFixtures (testContext: TestContext) =
                   (snd (BFS.runUndirected graph source))
                   |> Utils.createArrayFromDictionary (Array2D.length1 matrix) 0
 
-              let matrixHost =
-                  Utils.createMatrixFromArray2D CSR matrix ((=) 0)
+              let matrixHost = Utils.createMatrixFromArray2D CSR matrix ((=) 0)
 
               let matrix = matrixHost.ToDevice context
 
               match matrix with
               | ClMatrix.CSR mtx ->
-                  let res =
-                      bfs queue matrix source |> ClVector.Dense
+                  let res = bfs queue matrix source |> ClVector.Dense
 
                   let resHost = res.ToHost queue
 
@@ -64,5 +60,4 @@ let testFixtures (testContext: TestContext) =
                   | _ -> failwith "Not implemented"
               | _ -> failwith "Not implemented" ]
 
-let tests =
-    TestCases.gpuTests "Bfs tests" testFixtures
+let tests = TestCases.gpuTests "Bfs tests" testFixtures

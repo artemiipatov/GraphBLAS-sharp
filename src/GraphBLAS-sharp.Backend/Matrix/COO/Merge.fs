@@ -8,125 +8,152 @@ module Merge =
     let run<'a, 'b when 'a: struct and 'b: struct> (clContext: ClContext) workGroupSize =
 
         let merge =
-            <@ fun (ndRange: Range1D) firstSide secondSide sumOfSides (firstRowsBuffer: ClArray<int>) (firstColumnsBuffer: ClArray<int>) (firstValuesBuffer: ClArray<'a>) (secondRowsBuffer: ClArray<int>) (secondColumnsBuffer: ClArray<int>) (secondValuesBuffer: ClArray<'b>) (allRowsBuffer: ClArray<int>) (allColumnsBuffer: ClArray<int>) (leftMergedValuesBuffer: ClArray<'a>) (rightMergedValuesBuffer: ClArray<'b>) (isLeftBitmap: ClArray<int>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    firstSide
+                    secondSide
+                    sumOfSides
+                    (firstRowsBuffer: ClArray<int>)
+                    (firstColumnsBuffer: ClArray<int>)
+                    (firstValuesBuffer: ClArray<'a>)
+                    (secondRowsBuffer: ClArray<int>)
+                    (secondColumnsBuffer: ClArray<int>)
+                    (secondValuesBuffer: ClArray<'b>)
+                    (allRowsBuffer: ClArray<int>)
+                    (allColumnsBuffer: ClArray<int>)
+                    (leftMergedValuesBuffer: ClArray<'a>)
+                    (rightMergedValuesBuffer: ClArray<'b>)
+                    (isLeftBitmap: ClArray<int>) ->
 
-                let i = ndRange.GlobalID0
+                    let i = ndRange.GlobalID0
 
-                let mutable beginIdxLocal = local ()
-                let mutable endIdxLocal = local ()
-                let localID = ndRange.LocalID0
+                    let mutable beginIdxLocal = local ()
+                    let mutable endIdxLocal = local ()
+                    let localID = ndRange.LocalID0
 
-                if localID < 2 then
-                    let x = localID * (workGroupSize - 1) + i - 1
+                    if localID < 2 then
+                        let x = localID * (workGroupSize - 1) + i - 1
 
-                    let diagonalNumber = min (sumOfSides - 1) x
+                        let diagonalNumber = min (sumOfSides - 1) x
 
-                    let mutable leftEdge = diagonalNumber + 1 - secondSide
-                    leftEdge <- max 0 leftEdge
+                        let mutable leftEdge = diagonalNumber + 1 - secondSide
 
-                    let mutable rightEdge = firstSide - 1
+                        leftEdge <- max 0 leftEdge
 
-                    rightEdge <- min diagonalNumber rightEdge
+                        let mutable rightEdge = firstSide - 1
 
-                    while leftEdge <= rightEdge do
-                        let middleIdx = (leftEdge + rightEdge) / 2
+                        rightEdge <- min diagonalNumber rightEdge
 
-                        let firstIndex: uint64 =
-                            ((uint64 firstRowsBuffer.[middleIdx]) <<< 32)
-                            ||| (uint64 firstColumnsBuffer.[middleIdx])
+                        while leftEdge <= rightEdge do
+                            let middleIdx = (leftEdge + rightEdge) / 2
 
-                        let secondIndex: uint64 =
-                            ((uint64 secondRowsBuffer.[diagonalNumber - middleIdx])
-                             <<< 32)
-                            ||| (uint64 secondColumnsBuffer.[diagonalNumber - middleIdx])
+                            let firstIndex: uint64 =
+                                ((uint64 firstRowsBuffer.[middleIdx]) <<< 32)
+                                ||| (uint64 firstColumnsBuffer.[middleIdx])
 
-                        if firstIndex < secondIndex then
-                            leftEdge <- middleIdx + 1
+                            let secondIndex: uint64 =
+                                ((uint64 secondRowsBuffer.[diagonalNumber - middleIdx]) <<< 32)
+                                ||| (uint64 secondColumnsBuffer.[diagonalNumber - middleIdx])
+
+                            if firstIndex < secondIndex then
+                                leftEdge <- middleIdx + 1
+                            else
+                                rightEdge <- middleIdx - 1
+
+                        // Here localID equals either 0 or 1
+                        if localID = 0 then
+                            beginIdxLocal <- leftEdge
                         else
-                            rightEdge <- middleIdx - 1
+                            endIdxLocal <- leftEdge
 
-                    // Here localID equals either 0 or 1
-                    if localID = 0 then
-                        beginIdxLocal <- leftEdge
-                    else
-                        endIdxLocal <- leftEdge
+                    barrierLocal ()
 
-                barrierLocal ()
+                    let beginIdx = beginIdxLocal
+                    let endIdx = endIdxLocal
 
-                let beginIdx = beginIdxLocal
-                let endIdx = endIdxLocal
-                let firstLocalLength = endIdx - beginIdx
-                let mutable x = workGroupSize - firstLocalLength
+                    let firstLocalLength = endIdx - beginIdx
 
-                if endIdx = firstSide then
-                    x <- secondSide - i + localID + beginIdx
+                    let mutable x = workGroupSize - firstLocalLength
 
-                let secondLocalLength = x
+                    if endIdx = firstSide then
+                        x <- secondSide - i + localID + beginIdx
 
-                //First indices are from 0 to firstLocalLength - 1 inclusive
-                //Second indices are from firstLocalLength to firstLocalLength + secondLocalLength - 1 inclusive
-                let localIndices = localArray<uint64> workGroupSize
+                    let secondLocalLength = x
 
-                if localID < firstLocalLength then
-                    localIndices.[localID] <-
-                        ((uint64 firstRowsBuffer.[beginIdx + localID])
-                         <<< 32)
-                        ||| (uint64 firstColumnsBuffer.[beginIdx + localID])
+                    //First indices are from 0 to firstLocalLength - 1 inclusive
+                    //Second indices are from firstLocalLength to firstLocalLength + secondLocalLength - 1 inclusive
+                    let localIndices = localArray<uint64> workGroupSize
 
-                if localID < secondLocalLength then
-                    localIndices.[firstLocalLength + localID] <-
-                        ((uint64 secondRowsBuffer.[i - beginIdx]) <<< 32)
-                        ||| (uint64 secondColumnsBuffer.[i - beginIdx])
+                    if localID < firstLocalLength then
+                        localIndices.[localID] <-
+                            ((uint64 firstRowsBuffer.[beginIdx + localID]) <<< 32)
+                            ||| (uint64 firstColumnsBuffer.[beginIdx + localID])
 
-                barrierLocal ()
+                    if localID < secondLocalLength then
+                        localIndices.[firstLocalLength + localID] <-
+                            ((uint64 secondRowsBuffer.[i - beginIdx]) <<< 32)
+                            ||| (uint64 secondColumnsBuffer.[i - beginIdx])
 
-                if i < sumOfSides then
-                    let mutable leftEdge = localID + 1 - secondLocalLength
-                    leftEdge <- max 0 leftEdge
+                    barrierLocal ()
 
-                    let mutable rightEdge = firstLocalLength - 1
+                    if i < sumOfSides then
+                        let mutable leftEdge = localID + 1 - secondLocalLength
 
-                    rightEdge <- min localID rightEdge
+                        leftEdge <- max 0 leftEdge
 
-                    while leftEdge <= rightEdge do
-                        let middleIdx = (leftEdge + rightEdge) / 2
-                        let firstIndex = localIndices.[middleIdx]
+                        let mutable rightEdge = firstLocalLength - 1
 
-                        let secondIndex =
-                            localIndices.[firstLocalLength + localID - middleIdx]
+                        rightEdge <- min localID rightEdge
 
-                        if firstIndex < secondIndex then
-                            leftEdge <- middleIdx + 1
+                        while leftEdge <= rightEdge do
+                            let middleIdx = (leftEdge + rightEdge) / 2
+
+                            let firstIndex = localIndices.[middleIdx]
+
+                            let secondIndex = localIndices.[firstLocalLength + localID - middleIdx]
+
+                            if firstIndex < secondIndex then
+                                leftEdge <- middleIdx + 1
+                            else
+                                rightEdge <- middleIdx - 1
+
+                        let boundaryX = rightEdge
+
+                        let boundaryY = localID - leftEdge
+
+                        // boundaryX and boundaryY can't be off the right edge of array (only off the left edge)
+                        let isValidX = boundaryX >= 0
+
+                        let isValidY = boundaryY >= 0
+
+                        let mutable fstIdx = 0UL
+
+                        if isValidX then
+                            fstIdx <- localIndices.[boundaryX]
+
+                        let mutable sndIdx = 0UL
+
+                        if isValidY then
+                            sndIdx <- localIndices.[firstLocalLength + boundaryY]
+
+                        if not isValidX || isValidY && fstIdx < sndIdx then
+                            allRowsBuffer.[i] <- int (sndIdx >>> 32)
+
+                            allColumnsBuffer.[i] <- int sndIdx
+
+                            rightMergedValuesBuffer.[i] <- secondValuesBuffer.[i - localID - beginIdx + boundaryY]
+
+                            isLeftBitmap.[i] <- 0
                         else
-                            rightEdge <- middleIdx - 1
+                            allRowsBuffer.[i] <- int (fstIdx >>> 32)
 
-                    let boundaryX = rightEdge
-                    let boundaryY = localID - leftEdge
+                            allColumnsBuffer.[i] <- int fstIdx
 
-                    // boundaryX and boundaryY can't be off the right edge of array (only off the left edge)
-                    let isValidX = boundaryX >= 0
-                    let isValidY = boundaryY >= 0
+                            leftMergedValuesBuffer.[i] <- firstValuesBuffer.[beginIdx + boundaryX]
 
-                    let mutable fstIdx = 0UL
-
-                    if isValidX then
-                        fstIdx <- localIndices.[boundaryX]
-
-                    let mutable sndIdx = 0UL
-
-                    if isValidY then
-                        sndIdx <- localIndices.[firstLocalLength + boundaryY]
-
-                    if not isValidX || isValidY && fstIdx < sndIdx then
-                        allRowsBuffer.[i] <- int (sndIdx >>> 32)
-                        allColumnsBuffer.[i] <- int sndIdx
-                        rightMergedValuesBuffer.[i] <- secondValuesBuffer.[i - localID - beginIdx + boundaryY]
-                        isLeftBitmap.[i] <- 0
-                    else
-                        allRowsBuffer.[i] <- int (fstIdx >>> 32)
-                        allColumnsBuffer.[i] <- int fstIdx
-                        leftMergedValuesBuffer.[i] <- firstValuesBuffer.[beginIdx + boundaryX]
-                        isLeftBitmap.[i] <- 1 @>
+                            isLeftBitmap.[i] <- 1
+            @>
 
         let kernel = clContext.Compile(merge)
 
@@ -134,6 +161,7 @@ module Merge =
 
             let firstSide = leftMatrix.Columns.Length
             let secondSide = rightMatrix.Columns.Length
+
             let sumOfSides = firstSide + secondSide
 
             let allRows =
@@ -151,30 +179,28 @@ module Merge =
             let isLeft =
                 clContext.CreateClArrayWithSpecificAllocationMode<int>(DeviceOnly, sumOfSides)
 
-            let ndRange =
-                Range1D.CreateValid(sumOfSides, workGroupSize)
+            let ndRange = Range1D.CreateValid(sumOfSides, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            firstSide
-                            secondSide
-                            sumOfSides
-                            leftMatrix.Rows
-                            leftMatrix.Columns
-                            leftMatrix.Values
-                            rightMatrix.Rows
-                            rightMatrix.Columns
-                            rightMatrix.Values
-                            allRows
-                            allColumns
-                            leftMergedValues
-                            rightMergedValues
-                            isLeft)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc
+                        ndRange
+                        firstSide
+                        secondSide
+                        sumOfSides
+                        leftMatrix.Rows
+                        leftMatrix.Columns
+                        leftMatrix.Values
+                        rightMatrix.Rows
+                        rightMatrix.Columns
+                        rightMatrix.Values
+                        allRows
+                        allColumns
+                        leftMergedValues
+                        rightMergedValues
+                        isLeft)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))

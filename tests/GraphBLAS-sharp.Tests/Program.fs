@@ -23,10 +23,7 @@ let matrixTests =
 
 let commonTests =
     let scanTests =
-        testList
-            "Scan"
-            [ Common.Scan.ByKey.sequentialSegmentsTests
-              Common.Scan.PrefixSum.tests ]
+        testList "Scan" [ Common.Scan.ByKey.sequentialSegmentsTests; Common.Scan.PrefixSum.tests ]
 
     let reduceTests =
         testList
@@ -56,10 +53,7 @@ let commonTests =
               Common.ClArray.Item.tests ]
 
     let sortTests =
-        testList
-            "Sort"
-            [ Common.Sort.Bitonic.tests
-              Common.Sort.Radix.allTests ]
+        testList "Sort" [ Common.Sort.Bitonic.tests; Common.Sort.Radix.allTests ]
 
     testList
         "Common"
@@ -88,12 +82,9 @@ let vectorTests =
     |> testSequenced
 
 let algorithmsTests =
-    testList "Algorithms tests" [ Algorithms.BFS.tests ]
-    |> testSequenced
+    testList "Algorithms tests" [ Algorithms.BFS.tests ] |> testSequenced
 
-let deviceTests =
-    testList "Device" [ matrixTests; commonTests ]
-    |> testSequenced
+let deviceTests = testList "Device" [ matrixTests; commonTests ] |> testSequenced
 
 let hostTests =
     testList
@@ -104,9 +95,7 @@ let hostTests =
     |> testSequenced
 
 [<Tests>]
-let allTests =
-    testList "All" [ deviceTests; hostTests ]
-    |> testSequenced
+let allTests = testList "All" [ deviceTests; hostTests ] |> testSequenced
 
 [<EntryPoint>]
 let main argv = allTests |> runTestsWithCLIArgs [] argv

@@ -1,6 +1,6 @@
 # GraphBLAS-sharp
 
-[![FAKE Build](https://github.com/YaccConstructor/GraphBLAS-sharp/actions/workflows/build-on-push.yml/badge.svg)](https://github.com/YaccConstructor/GraphBLAS-sharp/actions/workflows/build-on-push.yml) 
+[![FAKE Build](https://github.com/YaccConstructor/GraphBLAS-sharp/actions/workflows/build-on-push.yml/badge.svg)](https://github.com/YaccConstructor/GraphBLAS-sharp/actions/workflows/build-on-push.yml)
 [![NuGet Badge](https://buildstats.info/nuget/GraphBLAS-sharp)](https://www.nuget.org/packages/GraphBLAS-sharp/)
 [![License](https://img.shields.io/badge/License-MIT-red.svg)](https://opensource.org/licenses/MIT)
 
@@ -11,7 +11,7 @@
 GraphBLAS# is a GPGPU-based [GraphBLAS](https://graphblas.org/)-like API implementation in F#. To utilize GPGPUs we use [Brahma.FSharp](https://github.com/YaccConstructor/Brahma.FSharp). So, GraphBLAS# can utilize any OpenCL-compatible device.
 
 ### Features
-- ```Option<'t>``` to solve [explicit/implicit zeroes problem](https://github.com/GraphBLAS/LAGraph/issues/28#issuecomment-542952115). If graph has labels of type ```'t``` then adjacency matrix is ```Matrix<Option<'t>>```. Sparse storage contains only values for ```Some<'t>``` cells. 
+- ```Option<'t>``` to solve [explicit/implicit zeroes problem](https://github.com/GraphBLAS/LAGraph/issues/28#issuecomment-542952115). If graph has labels of type ```'t``` then adjacency matrix is ```Matrix<Option<'t>>```. Sparse storage contains only values for ```Some<'t>``` cells.
 - Elementwise operations have type ```AtLeastOne<'t1,'t2> -> Option<'t3>``` to be shure that ```None op None``` is ```None```. Also developer explicitly controls what should be ```None```. ```AtLeastOne``` defined as fallows:
   ```fsharp
   type AtLeastOne<'t1, 't2> =
@@ -19,40 +19,40 @@ GraphBLAS# is a GPGPU-based [GraphBLAS](https://graphblas.org/)-like API impleme
      | Left of 't1
      | Right of 't2
   ```
-  So, type of matrix-matrix elementwise operation is ```Matrix<Option<'t1>> -> Matrix<Option<'t2>> -> (AtLeastOne<'t1,'t2> -> Option<'t3>) -> Matrix<Option<'t3>>```. 
+  So, type of matrix-matrix elementwise operation is ```Matrix<Option<'t1>> -> Matrix<Option<'t2>> -> (AtLeastOne<'t1,'t2> -> Option<'t3>) -> Matrix<Option<'t3>>```.
 - No semirings. Just functions. Of course one can implement semirings on the top of provided API.
 - Minimal core: high-order functions allows us to minimaze core by functions unification. For example, such functions as matrix-matrix addition, matrix-matrix element-wise multiplication, masking all are partial case of `map2` function.
 
 ### Operations
 - **Matrix-Matrix**
-  - [x] CSR-CSR `map2`
-  - [x] CSR-CSR `map2AtLeastOne`
-  - [x] COO-COO `map2`
-  - [x] COO-COO `map2AtLeastOne`
-  - [x] CSR-CSR multiplication
-  - [x] CSR-CSR Kronecker product
+    - [x] CSR-CSR `map2`
+    - [x] CSR-CSR `map2AtLeastOne`
+    - [x] COO-COO `map2`
+    - [x] COO-COO `map2AtLeastOne`
+    - [x] CSR-CSR multiplication
+    - [x] CSR-CSR Kronecker product
 - **Vector-Matrix**
-  - [x] Dense-CSR multiplication
-  - [ ] Sparse-CSR multiplication
+    - [x] Dense-CSR multiplication
+    - [ ] Sparse-CSR multiplication
 - **Vector-Vector**
-  - [x] Dense-Dense `map2`
-  - [x] Dense-Dense `map2AtLeastOne`
-  - [x] Sparse-Sparse `map2`
-  - [x] Sparse-Sparse `map2AtLeastOne`
-  - [ ] ...
+    - [x] Dense-Dense `map2`
+    - [x] Dense-Dense `map2AtLeastOne`
+    - [x] Sparse-Sparse `map2`
+    - [x] Sparse-Sparse `map2AtLeastOne`
+    - [ ] ...
 - **Matrix**
-  - [x] `copy` 
-  - [x] `map`
-  - [x] COO transpose
-  - [x] CSR transpose
-  - [x] CSC transpose
-  - [ ] ...
+    - [x] `copy`
+    - [x] `map`
+    - [x] COO transpose
+    - [x] CSR transpose
+    - [x] CSC transpose
+    - [ ] ...
 - **Vector**
-  - [x] `zeroCreate` 
-  - [x] `ofList`
-  - [x] `copy`
-  - [x] `reduce`
-  - [ ] ...  
+    - [x] `zeroCreate`
+    - [x] `ofList`
+    - [x] `copy`
+    - [x] `reduce`
+    - [ ] ...
 
 ### Graph Analysis Algorithms
 - [ ] BFS
@@ -121,7 +121,7 @@ Matrices from [SuiteSparse matrix collection](https://sparse.tamu.edu/) which we
 </tbody>
 </table>
 
-Element-wise matrix-matrix evaluation results presented below. Time is measured in milliseconds. We perform our experiments on the PC with Ubuntu 20.04 installed and with the following hardware configuration: Intel Core i7–4790 CPU, 3.60GHz, 32GB DDR4 RAM with GeForce GTX 2070, 8GB GDDR6, 1.41GHz. 
+Element-wise matrix-matrix evaluation results presented below. Time is measured in milliseconds. We perform our experiments on the PC with Ubuntu 20.04 installed and with the following hardware configuration: Intel Core i7–4790 CPU, 3.60GHz, 32GB DDR4 RAM with GeForce GTX 2070, 8GB GDDR6, 1.41GHz.
 
 <table>
 <thead>
@@ -242,4 +242,3 @@ To release new version one should
 ## License
 This project licensed under MIT License. License text can be found in the [license file](https://github.com/YaccConstructor/GraphBLAS-sharp/blob/master/LICENSE.md).
  
-

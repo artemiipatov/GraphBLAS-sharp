@@ -29,15 +29,11 @@ let testCases =
               let actual = Array.zeroCreate clActual.Length
               q.PostAndReply(fun ch -> Msg.CreateToHostMsg(clActual, actual, ch))
 
-          logger.debug (
-              eventX "Actual is {actual}"
-              >> setField "actual" (sprintf "%A" actual)
-          )
+          logger.debug (eventX "Actual is {actual}" >> setField "actual" (sprintf "%A" actual))
 
           let expected = [| 1; 2; 3 |]
 
-          "Array should be without duplicates"
-          |> Expect.sequenceEqual actual expected
+          "Array should be without duplicates" |> Expect.sequenceEqual actual expected
 
       testProperty "Correctness test on random int arrays"
       <| fun (array: array<int>) ->
@@ -58,16 +54,10 @@ let testCases =
                   let actual = Array.zeroCreate clActual.Length
                   q.PostAndReply(fun ch -> Msg.CreateToHostMsg(clActual, actual, ch))
 
-              logger.debug (
-                  eventX "Actual is {actual}"
-                  >> setField "actual" $"%A{actual}"
-              )
+              logger.debug (eventX "Actual is {actual}" >> setField "actual" $"%A{actual}")
 
               let expected = Seq.distinct array |> Array.ofSeq
 
-              "Array should be without duplicates"
-              |> Expect.sequenceEqual actual expected ]
+              "Array should be without duplicates" |> Expect.sequenceEqual actual expected ]
 
-let tests =
-    testCases
-    |> testList "Array.removeDuplicates tests"
+let tests = testCases |> testList "Array.removeDuplicates tests"

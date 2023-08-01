@@ -23,7 +23,7 @@ let wgSize = Utils.defaultWorkGroupSize
 let getCorrectnessTestName case datatype =
     $"Correctness on %s{datatype}, %A{case}"
 
-let checkResult isEqual op zero (baseVector: 'a []) (actual: Vector<'b>) =
+let checkResult isEqual op zero (baseVector: 'a[]) (actual: Vector<'b>) =
 
     let expectedArrayLength = baseVector.Length
 
@@ -37,9 +37,7 @@ let checkResult isEqual op zero (baseVector: 'a []) (actual: Vector<'b>) =
         |> Utils.vectorToDenseVector
 
     match actual with
-    | Vector.Dense actual ->
-        "arrays must have the same values"
-        |> Expect.equal actual expected
+    | Vector.Dense actual -> "arrays must have the same values" |> Expect.equal actual expected
     | _ -> failwith "Vector format must be Sparse."
 
 let correctnessGenericTest
@@ -49,13 +47,12 @@ let correctnessGenericTest
     (toDense: MailboxProcessor<_> -> AllocationFlag -> ClVector<'a> -> ClVector<'a>)
     (isEqual: 'a -> 'a -> bool)
     (case: OperationCase<VectorFormat>)
-    (array: 'a [])
+    (array: 'a[])
     =
 
     let isZero = (isEqual zero)
 
-    let vectorHost =
-        Utils.createVectorFromArray case.Format array isZero
+    let vectorHost = Utils.createVectorFromArray case.Format array isZero
 
     if vectorHost.NNZ > 0 then
 
@@ -90,8 +87,7 @@ let createTestMap case (zero: 'a) (constant: 'a) binOp isEqual opQ =
     let unaryOp = binOp constant
     let unaryOpQ = opQ zero constant
 
-    let map =
-        Operations.Vector.map unaryOpQ context wgSize
+    let map = Operations.Vector.map unaryOpQ context wgSize
 
     let toDense = Vector.toDense context wgSize
 
@@ -105,8 +101,7 @@ let testFixturesMapNot case =
 
       createTestMap case false true (fun _ -> not) (=) (fun _ _ -> ArithmeticOperations.notOption) ]
 
-let notTests =
-    operationGPUTests "not" testFixturesMapNot
+let notTests = operationGPUTests "not" testFixturesMapNot
 
 let testFixturesMapAdd case =
     [ let context = case.TestContext.ClContext
@@ -122,8 +117,7 @@ let testFixturesMapAdd case =
 
       createTestMap case 0uy 10uy (+) (=) ArithmeticOperations.addLeftConst ]
 
-let addTests =
-    operationGPUTests "add" testFixturesMapAdd
+let addTests = operationGPUTests "add" testFixturesMapAdd
 
 let testFixturesMapMul case =
     [ let context = case.TestContext.ClContext
@@ -139,8 +133,6 @@ let testFixturesMapMul case =
 
       createTestMap case 0uy 10uy (*) (=) ArithmeticOperations.mulLeftConst ]
 
-let mulTests =
-    operationGPUTests "mul" testFixturesMapMul
+let mulTests = operationGPUTests "mul" testFixturesMapMul
 
-let allTests =
-    testList "Map" [ addTests; mulTests; notTests ]
+let allTests = testList "Map" [ addTests; mulTests; notTests ]

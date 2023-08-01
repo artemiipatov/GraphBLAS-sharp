@@ -13,9 +13,9 @@ let processor = Context.defaultContext.Queue
 
 let config =
     { Utils.defaultConfig with
-          arbitrary = [ typeof<Generators.Blit> ] }
+        arbitrary = [ typeof<Generators.Blit> ] }
 
-let makeTest<'a> isEqual testFun (source: 'a [], sourceIndex, target: 'a [], targetIndex, count) =
+let makeTest<'a> isEqual testFun (source: 'a[], sourceIndex, target: 'a[], targetIndex, count) =
 
     if source.Length > 0 && target.Length > 0 then
 
@@ -30,8 +30,7 @@ let makeTest<'a> isEqual testFun (source: 'a [], sourceIndex, target: 'a [], tar
         // write to target --- target expected
         Array.blit source sourceIndex target targetIndex count
 
-        "Results should be the same"
-        |> Utils.compareArrays isEqual actual target
+        "Results should be the same" |> Utils.compareArrays isEqual actual target
 
 let createTest<'a when 'a: equality> isEqual =
     ClArray.blit context Utils.defaultWorkGroupSize

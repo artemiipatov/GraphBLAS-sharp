@@ -17,25 +17,33 @@ module internal Map =
     let preparePositions<'a, 'b> opAdd (clContext: ClContext) workGroupSize =
 
         let preparePositions (op: Expr<'a option -> 'b option>) =
-            <@ fun (ndRange: Range1D) size valuesLength (values: ClArray<'a>) (indices: ClArray<int>) (resultBitmap: ClArray<int>) (resultValues: ClArray<'b>) (resultIndices: ClArray<int>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    size
+                    valuesLength
+                    (values: ClArray<'a>)
+                    (indices: ClArray<int>)
+                    (resultBitmap: ClArray<int>)
+                    (resultValues: ClArray<'b>)
+                    (resultIndices: ClArray<int>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < size then
+                    if gid < size then
 
-                    let value =
-                        (%Search.Bin.byKey) valuesLength gid indices values
+                        let value = (%Search.Bin.byKey) valuesLength gid indices values
 
-                    match (%op) value with
-                    | Some resultValue ->
-                        resultValues.[gid] <- resultValue
-                        resultIndices.[gid] <- gid
+                        match (%op) value with
+                        | Some resultValue ->
+                            resultValues.[gid] <- resultValue
+                            resultIndices.[gid] <- gid
 
-                        resultBitmap.[gid] <- 1
-                    | None -> resultBitmap.[gid] <- 0 @>
+                            resultBitmap.[gid] <- 1
+                        | None -> resultBitmap.[gid] <- 0
+            @>
 
-        let kernel =
-            clContext.Compile <| preparePositions opAdd
+        let kernel = clContext.Compile <| preparePositions opAdd
 
         fun (processor: MailboxProcessor<_>) (size: int) (values: ClArray<'a>) (indices: ClArray<int>) ->
 
@@ -53,17 +61,8 @@ module internal Map =
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            size
-                            values.Length
-                            values
-                            indices
-                            resultBitmap
-                            resultValues
-                            resultIndices)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange size values.Length values indices resultBitmap resultValues resultIndices)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -76,16 +75,13 @@ module internal Map =
         workGroupSize
         =
 
-        let map =
-            preparePositions op clContext workGroupSize
+        let map = preparePositions op clContext workGroupSize
 
-        let setPositions =
-            Common.setPositions<'b> clContext workGroupSize
+        let setPositions = Common.setPositions<'b> clContext workGroupSize
 
         fun (queue: MailboxProcessor<_>) allocationMode (vector: ClVector.Sparse<'a>) ->
 
-            let bitmap, values, indices =
-                map queue vector.Size vector.Values vector.Indices
+            let bitmap, values, indices = map queue vector.Size vector.Values vector.Indices
 
             let resultValues, resultIndices =
                 setPositions queue allocationMode values indices bitmap
@@ -103,24 +99,33 @@ module internal Map =
         let private preparePositions<'a, 'b, 'c> opAdd (clContext: ClContext) workGroupSize =
 
             let preparePositions (op: Expr<'a option -> 'b option -> 'c option>) =
-                <@ fun (ndRange: Range1D) (operand: ClCell<'a option>) size valuesLength (indices: ClArray<int>) (values: ClArray<'b>) (resultIndices: ClArray<int>) (resultValues: ClArray<'c>) (resultBitmap: ClArray<int>) ->
+                <@
+                    fun
+                        (ndRange: Range1D)
+                        (operand: ClCell<'a option>)
+                        size
+                        valuesLength
+                        (indices: ClArray<int>)
+                        (values: ClArray<'b>)
+                        (resultIndices: ClArray<int>)
+                        (resultValues: ClArray<'c>)
+                        (resultBitmap: ClArray<int>) ->
 
-                    let gid = ndRange.GlobalID0
+                        let gid = ndRange.GlobalID0
 
-                    if gid < size then
+                        if gid < size then
 
-                        let value =
-                            (%Search.Bin.byKey) valuesLength gid indices values
+                            let value = (%Search.Bin.byKey) valuesLength gid indices values
 
-                        match (%op) operand.Value value with
-                        | Some resultValue ->
-                            resultValues.[gid] <- resultValue
-                            resultIndices.[gid] <- gid
-                            resultBitmap.[gid] <- 1
-                        | None -> resultBitmap.[gid] <- 0 @>
+                            match (%op) operand.Value value with
+                            | Some resultValue ->
+                                resultValues.[gid] <- resultValue
+                                resultIndices.[gid] <- gid
+                                resultBitmap.[gid] <- 1
+                            | None -> resultBitmap.[gid] <- 0
+                @>
 
-            let kernel =
-                clContext.Compile <| preparePositions opAdd
+            let kernel = clContext.Compile <| preparePositions opAdd
 
             fun (processor: MailboxProcessor<_>) (value: ClCell<'a option>) (vector: Sparse<'b>) ->
 
@@ -133,24 +138,22 @@ module internal Map =
                 let resultValues =
                     clContext.CreateClArrayWithSpecificAllocationMode<'c>(DeviceOnly, vector.Size)
 
-                let ndRange =
-                    Range1D.CreateValid(vector.Size, workGroupSize)
+                let ndRange = Range1D.CreateValid(vector.Size, workGroupSize)
 
                 let kernel = kernel.GetKernel()
 
                 processor.Post(
-                    Msg.MsgSetArguments
-                        (fun () ->
-                            kernel.KernelFunc
-                                ndRange
-                                value
-                                vector.Size
-                                vector.Values.Length
-                                vector.Indices
-                                vector.Values
-                                resultIndices
-                                resultValues
-                                resultBitmap)
+                    Msg.MsgSetArguments(fun () ->
+                        kernel.KernelFunc
+                            ndRange
+                            value
+                            vector.Size
+                            vector.Values.Length
+                            vector.Indices
+                            vector.Values
+                            resultIndices
+                            resultValues
+                            resultBitmap)
                 )
 
                 processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -163,18 +166,15 @@ module internal Map =
             (op: Expr<'a option -> 'b option -> 'c option>)
             =
 
-            let map =
-                preparePositions op clContext workGroupSize
+            let map = preparePositions op clContext workGroupSize
 
             let opOnHost = op.Evaluate()
 
-            let setPositions =
-                Common.setPositionsOption<'c> clContext workGroupSize
+            let setPositions = Common.setPositionsOption<'c> clContext workGroupSize
 
             let create = ClArray.create clContext workGroupSize
 
-            let init =
-                ClArray.init <@ id @> clContext workGroupSize
+            let init = ClArray.init <@ id @> clContext workGroupSize
 
             fun (queue: MailboxProcessor<_>) allocationMode (value: 'a option) size ->
                 function
@@ -185,25 +185,22 @@ module internal Map =
 
                     valueClCell.Free queue
 
-                    let result =
-                        setPositions queue allocationMode values indices bitmap
+                    let result = setPositions queue allocationMode values indices bitmap
 
                     indices.Free queue
                     values.Free queue
                     bitmap.Free queue
 
                     result
-                    |> Option.map
-                        (fun (resultValues, resultIndices) ->
-                            { Context = clContext
-                              Size = size
-                              Indices = resultIndices
-                              Values = resultValues })
+                    |> Option.map (fun (resultValues, resultIndices) ->
+                        { Context = clContext
+                          Size = size
+                          Indices = resultIndices
+                          Values = resultValues })
                 | None ->
                     opOnHost value None
-                    |> Option.map
-                        (fun resultValue ->
-                            { Context = clContext
-                              Size = size
-                              Indices = init queue allocationMode size
-                              Values = create queue allocationMode size resultValue })
+                    |> Option.map (fun resultValue ->
+                        { Context = clContext
+                          Size = size
+                          Indices = init queue allocationMode size
+                          Values = create queue allocationMode size resultValue })

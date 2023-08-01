@@ -10,19 +10,21 @@ module internal Common =
     ///<param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let setPositions<'a when 'a: struct> (clContext: ClContext) workGroupSize =
 
-        let indicesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let indicesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let valuesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let valuesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let sum =
-            Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let sum = Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (allRows: ClArray<int>) (allColumns: ClArray<int>) (allValues: ClArray<'a>) (positions: ClArray<int>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (allRows: ClArray<int>)
+            (allColumns: ClArray<int>)
+            (allValues: ClArray<'a>)
+            (positions: ClArray<int>) ->
 
-            let resultLength =
-                (sum processor positions).ToHostAndFree(processor)
+            let resultLength = (sum processor positions).ToHostAndFree(processor)
 
             let resultRows =
                 clContext.CreateClArrayWithSpecificAllocationMode<int>(allocationMode, resultLength)
@@ -45,19 +47,21 @@ module internal Common =
     ///<param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let setPositionsOption<'a when 'a: struct> (clContext: ClContext) workGroupSize =
 
-        let indicesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let indicesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let valuesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let valuesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let sum =
-            Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let sum = Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (allRows: ClArray<int>) (allColumns: ClArray<int>) (allValues: ClArray<'a>) (positions: ClArray<int>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (allRows: ClArray<int>)
+            (allColumns: ClArray<int>)
+            (allValues: ClArray<'a>)
+            (positions: ClArray<int>) ->
 
-            let resultLength =
-                (sum processor positions).ToHostAndFree(processor)
+            let resultLength = (sum processor positions).ToHostAndFree(processor)
 
             if resultLength = 0 then
                 None

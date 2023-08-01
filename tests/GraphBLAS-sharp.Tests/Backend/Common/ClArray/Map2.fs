@@ -14,7 +14,7 @@ let wgSize = Utils.defaultWorkGroupSize
 
 let config = Utils.defaultConfig
 
-let makeTest<'a when 'a: equality> testContext clMapFun hostMapFun isEqual (leftArray: 'a [], rightArray: 'a []) =
+let makeTest<'a when 'a: equality> testContext clMapFun hostMapFun isEqual (leftArray: 'a[], rightArray: 'a[]) =
     if leftArray.Length > 0 then
         let context = testContext.ClContext
         let q = testContext.Queue
@@ -25,19 +25,16 @@ let makeTest<'a when 'a: equality> testContext clMapFun hostMapFun isEqual (left
         let rightClArray =
             context.CreateClArrayWithSpecificAllocationMode(DeviceOnly, rightArray)
 
-        let (actualDevice: ClArray<'a>) =
-            clMapFun q HostInterop leftClArray rightClArray
+        let (actualDevice: ClArray<'a>) = clMapFun q HostInterop leftClArray rightClArray
 
         let actualHost = Array.zeroCreate actualDevice.Length
 
         q.PostAndReply(fun ch -> Msg.CreateToHostMsg(actualDevice, actualHost, ch))
         |> ignore
 
-        let expected =
-            Array.map2 hostMapFun leftArray rightArray
+        let expected = Array.map2 hostMapFun leftArray rightArray
 
-        "Arrays must be the same"
-        |> Utils.compareArrays isEqual actualHost expected
+        "Arrays must be the same" |> Utils.compareArrays isEqual actualHost expected
 
 let createTest<'a when 'a: equality> (testContext: TestContext) isEqual hostMapFun mapFunQ =
 
@@ -58,8 +55,7 @@ let testFixturesAdd (testContext: TestContext) =
       createTest<float32> testContext Utils.float32IsEqual (+) <@ (+) @>
       createTest<byte> testContext (=) (+) <@ (+) @> ]
 
-let addTests =
-    TestCases.gpuTests "ClArray.map2 add tests" testFixturesAdd
+let addTests = TestCases.gpuTests "ClArray.map2 add tests" testFixturesAdd
 
 let testFixturesMul (testContext: TestContext) =
     [ createTest<int> testContext (=) (*) <@ (*) @>

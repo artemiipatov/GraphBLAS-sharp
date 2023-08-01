@@ -15,20 +15,17 @@ module Bitonic =
 
     let config =
         { Utils.defaultConfig with
-              endSize = 1000000 }
+            endSize = 1000000 }
 
     let wgSize = Utils.defaultWorkGroupSize
 
     let q = defaultContext.Queue
 
-    let makeTest sort (array: ('n * 'n * 'a) []) =
+    let makeTest sort (array: ('n * 'n * 'a)[]) =
         if array.Length > 0 then
             let projection (row: 'n) (col: 'n) (_: 'a) = row, col
 
-            logger.debug (
-                eventX "Initial size is {size}"
-                >> setField "size" $"%A{array.Length}"
-            )
+            logger.debug (eventX "Initial size is {size}" >> setField "size" $"%A{array.Length}")
 
             let rows, cols, vals = Array.unzip3 array
 

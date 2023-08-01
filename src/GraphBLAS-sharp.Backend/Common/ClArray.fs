@@ -19,12 +19,14 @@ module ClArray =
     let init (initializer: Expr<int -> 'a>) (clContext: ClContext) workGroupSize =
 
         let init =
-            <@ fun (range: Range1D) (outputBuffer: ClArray<'a>) (length: int) ->
+            <@
+                fun (range: Range1D) (outputBuffer: ClArray<'a>) (length: int) ->
 
-                let i = range.GlobalID0
+                    let i = range.GlobalID0
 
-                if i < length then
-                    outputBuffer.[i] <- (%initializer) i @>
+                    if i < length then
+                        outputBuffer.[i] <- (%initializer) i
+            @>
 
         let program = clContext.Compile(init)
 
@@ -34,10 +36,10 @@ module ClArray =
 
             let kernel = program.GetKernel()
 
-            let ndRange =
-                Range1D.CreateValid(length, workGroupSize)
+            let ndRange = Range1D.CreateValid(length, workGroupSize)
 
             processor.Post(Msg.MsgSetArguments(fun () -> kernel.KernelFunc ndRange outputArray length))
+
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
 
             outputArray
@@ -50,12 +52,14 @@ module ClArray =
     let create (clContext: ClContext) workGroupSize =
 
         let create =
-            <@ fun (range: Range1D) (outputBuffer: ClArray<'a>) (length: int) (value: ClCell<'a>) ->
+            <@
+                fun (range: Range1D) (outputBuffer: ClArray<'a>) (length: int) (value: ClCell<'a>) ->
 
-                let i = range.GlobalID0
+                    let i = range.GlobalID0
 
-                if i < length then
-                    outputBuffer.[i] <- value.Value @>
+                    if i < length then
+                        outputBuffer.[i] <- value.Value
+            @>
 
         let program = clContext.Compile(create)
 
@@ -67,10 +71,10 @@ module ClArray =
 
             let kernel = program.GetKernel()
 
-            let ndRange =
-                Range1D.CreateValid(length, workGroupSize)
+            let ndRange = Range1D.CreateValid(length, workGroupSize)
 
             processor.Post(Msg.MsgSetArguments(fun () -> kernel.KernelFunc ndRange outputArray length value))
+
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
             processor.Post(Msg.CreateFreeMsg(value))
 
@@ -95,18 +99,19 @@ module ClArray =
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let copy (clContext: ClContext) workGroupSize =
         let copy =
-            <@ fun (ndRange: Range1D) (inputArrayBuffer: ClArray<'a>) (outputArrayBuffer: ClArray<'a>) inputArrayLength ->
+            <@
+                fun (ndRange: Range1D) (inputArrayBuffer: ClArray<'a>) (outputArrayBuffer: ClArray<'a>) inputArrayLength ->
 
-                let i = ndRange.GlobalID0
+                    let i = ndRange.GlobalID0
 
-                if i < inputArrayLength then
-                    outputArrayBuffer.[i] <- inputArrayBuffer.[i] @>
+                    if i < inputArrayLength then
+                        outputArrayBuffer.[i] <- inputArrayBuffer.[i]
+            @>
 
         let program = clContext.Compile(copy)
 
         fun (processor: MailboxProcessor<_>) allocationMode (inputArray: ClArray<'a>) ->
-            let ndRange =
-                Range1D.CreateValid(inputArray.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(inputArray.Length, workGroupSize)
 
             let outputArray =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, inputArray.Length)
@@ -129,12 +134,19 @@ module ClArray =
     let replicate (clContext: ClContext) workGroupSize =
 
         let replicate =
-            <@ fun (ndRange: Range1D) (inputArrayBuffer: ClArray<'a>) (outputArrayBuffer: ClArray<'a>) inputArrayLength outputArrayLength ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    (inputArrayBuffer: ClArray<'a>)
+                    (outputArrayBuffer: ClArray<'a>)
+                    inputArrayLength
+                    outputArrayLength ->
 
-                let i = ndRange.GlobalID0
+                    let i = ndRange.GlobalID0
 
-                if i < outputArrayLength then
-                    outputArrayBuffer.[i] <- inputArrayBuffer.[i % inputArrayLength] @>
+                    if i < outputArrayLength then
+                        outputArrayBuffer.[i] <- inputArrayBuffer.[i % inputArrayLength]
+            @>
 
         let kernel = clContext.Compile(replicate)
 
@@ -144,14 +156,13 @@ module ClArray =
             let outputArray =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, outputArrayLength)
 
-            let ndRange =
-                Range1D.CreateValid(outputArray.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(outputArray.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () -> kernel.KernelFunc ndRange inputArray outputArray inputArray.Length outputArrayLength)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange inputArray outputArray inputArray.Length outputArrayLength)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -168,12 +179,14 @@ module ClArray =
     let map<'a, 'b> (op: Expr<'a -> 'b>) (clContext: ClContext) workGroupSize =
 
         let map =
-            <@ fun (ndRange: Range1D) lenght (inputArray: ClArray<'a>) (result: ClArray<'b>) ->
+            <@
+                fun (ndRange: Range1D) lenght (inputArray: ClArray<'a>) (result: ClArray<'b>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < lenght then
-                    result.[gid] <- (%op) inputArray.[gid] @>
+                    if gid < lenght then
+                        result.[gid] <- (%op) inputArray.[gid]
+            @>
 
         let kernel = clContext.Compile map
 
@@ -182,8 +195,7 @@ module ClArray =
             let result =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, inputArray.Length)
 
-            let ndRange =
-                Range1D.CreateValid(inputArray.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(inputArray.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
@@ -204,12 +216,14 @@ module ClArray =
     let mapWithValue<'a, 'b, 'c> (clContext: ClContext) workGroupSize (op: Expr<'a -> 'b -> 'c>) =
 
         let map =
-            <@ fun (ndRange: Range1D) lenght (value: ClCell<'a>) (inputArray: ClArray<'b>) (result: ClArray<'c>) ->
+            <@
+                fun (ndRange: Range1D) lenght (value: ClCell<'a>) (inputArray: ClArray<'b>) (result: ClArray<'c>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < lenght then
-                    result.[gid] <- (%op) value.Value inputArray.[gid] @>
+                    if gid < lenght then
+                        result.[gid] <- (%op) value.Value inputArray.[gid]
+            @>
 
         let kernel = clContext.Compile map
 
@@ -220,8 +234,7 @@ module ClArray =
 
             let valueClCell = value |> clContext.CreateClCell
 
-            let ndRange =
-                Range1D.CreateValid(inputArray.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(inputArray.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
@@ -246,26 +259,36 @@ module ClArray =
     let map2InPlace<'a, 'b, 'c> (map: Expr<'a -> 'b -> 'c>) (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) length (leftArray: ClArray<'a>) (rightArray: ClArray<'b>) (resultArray: ClArray<'c>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (leftArray: ClArray<'a>)
+                    (rightArray: ClArray<'b>)
+                    (resultArray: ClArray<'c>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < length then
+                    if gid < length then
 
-                    resultArray.[gid] <- (%map) leftArray.[gid] rightArray.[gid] @>
+                        resultArray.[gid] <- (%map) leftArray.[gid] rightArray.[gid]
+            @>
 
         let kernel = clContext.Compile kernel
 
-        fun (processor: MailboxProcessor<_>) (leftArray: ClArray<'a>) (rightArray: ClArray<'b>) (resultArray: ClArray<'c>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (leftArray: ClArray<'a>)
+            (rightArray: ClArray<'b>)
+            (resultArray: ClArray<'c>) ->
 
-            let ndRange =
-                Range1D.CreateValid(resultArray.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(resultArray.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () -> kernel.KernelFunc ndRange resultArray.Length leftArray rightArray resultArray)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange resultArray.Length leftArray rightArray resultArray)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -281,8 +304,7 @@ module ClArray =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let map2<'a, 'b, 'c> map (clContext: ClContext) workGroupSize =
-        let map2 =
-            map2InPlace<'a, 'b, 'c> map clContext workGroupSize
+        let map2 = map2InPlace<'a, 'b, 'c> map clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (leftArray: ClArray<'a>) (rightArray: ClArray<'b>) ->
 
@@ -297,17 +319,19 @@ module ClArray =
         let private getUniqueBitmapGeneral predicate (clContext: ClContext) workGroupSize =
 
             let getUniqueBitmap =
-                <@ fun (ndRange: Range1D) (inputArray: ClArray<'a>) inputLength (isUniqueBitmap: ClArray<int>) ->
+                <@
+                    fun (ndRange: Range1D) (inputArray: ClArray<'a>) inputLength (isUniqueBitmap: ClArray<int>) ->
 
-                    let gid = ndRange.GlobalID0
+                        let gid = ndRange.GlobalID0
 
-                    if gid < inputLength then
-                        let isUnique = (%predicate) gid inputLength inputArray // brahma error
+                        if gid < inputLength then
+                            let isUnique = (%predicate) gid inputLength inputArray // brahma error
 
-                        if isUnique then
-                            isUniqueBitmap.[gid] <- 1
-                        else
-                            isUniqueBitmap.[gid] <- 0 @>
+                            if isUnique then
+                                isUniqueBitmap.[gid] <- 1
+                            else
+                                isUniqueBitmap.[gid] <- 0
+                @>
 
             let kernel = clContext.Compile(getUniqueBitmap)
 
@@ -315,8 +339,7 @@ module ClArray =
 
                 let inputLength = inputArray.Length
 
-                let ndRange =
-                    Range1D.CreateValid(inputLength, workGroupSize)
+                let ndRange = Range1D.CreateValid(inputLength, workGroupSize)
 
                 let bitmap =
                     clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, inputLength)
@@ -334,35 +357,27 @@ module ClArray =
         /// </summary>
         /// <param name="clContext">OpenCL context.</param>
         let firstOccurrence clContext =
-            getUniqueBitmapGeneral
-            <| Predicates.firstOccurrence ()
-            <| clContext
+            getUniqueBitmapGeneral <| Predicates.firstOccurrence () <| clContext
 
         /// <summary>
         /// Gets the bitmap that indicates the last elements of the sequences of consecutive identical elements
         /// </summary>
         /// <param name="clContext">OpenCL context.</param>
         let lastOccurrence clContext =
-            getUniqueBitmapGeneral
-            <| Predicates.lastOccurrence ()
-            <| clContext
+            getUniqueBitmapGeneral <| Predicates.lastOccurrence () <| clContext
 
         let private getUniqueBitmap2General<'a when 'a: equality> getUniqueBitmap (clContext: ClContext) workGroupSize =
 
-            let map =
-                map2 <@ fun x y -> x ||| y @> clContext workGroupSize
+            let map = map2 <@ fun x y -> x ||| y @> clContext workGroupSize
 
             let firstGetBitmap = getUniqueBitmap clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode (firstArray: ClArray<'a>) (secondArray: ClArray<'a>) ->
-                let firstBitmap =
-                    firstGetBitmap processor DeviceOnly firstArray
+                let firstBitmap = firstGetBitmap processor DeviceOnly firstArray
 
-                let secondBitmap =
-                    firstGetBitmap processor DeviceOnly secondArray
+                let secondBitmap = firstGetBitmap processor DeviceOnly secondArray
 
-                let result =
-                    map processor allocationMode firstBitmap secondBitmap
+                let result = map processor allocationMode firstBitmap secondBitmap
 
                 firstBitmap.Free processor
                 secondBitmap.Free processor
@@ -393,23 +408,17 @@ module ClArray =
     /// <param name="inputArray">Should be sorted.</param>
     let removeDuplications (clContext: ClContext) workGroupSize =
 
-        let scatter =
-            Scatter.lastOccurrence clContext workGroupSize
+        let scatter = Scatter.lastOccurrence clContext workGroupSize
 
-        let getUniqueBitmap =
-            Bitmap.lastOccurrence clContext workGroupSize
+        let getUniqueBitmap = Bitmap.lastOccurrence clContext workGroupSize
 
-        let prefixSumExclude =
-            PrefixSum.runExcludeInPlace <@ (+) @> clContext workGroupSize
+        let prefixSumExclude = PrefixSum.runExcludeInPlace <@ (+) @> clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) (inputArray: ClArray<'a>) ->
 
-            let bitmap =
-                getUniqueBitmap processor DeviceOnly inputArray
+            let bitmap = getUniqueBitmap processor DeviceOnly inputArray
 
-            let resultLength =
-                (prefixSumExclude processor bitmap 0)
-                    .ToHostAndFree(processor)
+            let resultLength = (prefixSumExclude processor bitmap 0).ToHostAndFree(processor)
 
             let outputArray =
                 clContext.CreateClArrayWithSpecificAllocationMode(DeviceOnly, resultLength)
@@ -429,14 +438,17 @@ module ClArray =
     let exists (predicate: Expr<'a -> bool>) (clContext: ClContext) workGroupSize =
 
         let exists =
-            <@ fun (ndRange: Range1D) length (vector: ClArray<'a>) (result: ClCell<bool>) ->
+            <@
+                fun (ndRange: Range1D) length (vector: ClArray<'a>) (result: ClCell<bool>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < length then
-                    let isExist = (%predicate) vector.[gid]
+                    if gid < length then
+                        let isExist = (%predicate) vector.[gid]
 
-                    if isExist then result.Value <- true @>
+                        if isExist then
+                            result.Value <- true
+            @>
 
         let kernel = clContext.Compile exists
 
@@ -444,8 +456,7 @@ module ClArray =
 
             let result = clContext.CreateClCell false
 
-            let ndRange =
-                Range1D.CreateValid(vector.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(vector.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
@@ -466,19 +477,27 @@ module ClArray =
     let private assignOption (op: Expr<'a -> 'b option>) (clContext: ClContext) workGroupSize =
 
         let assign =
-            <@ fun (ndRange: Range1D) length (values: ClArray<'a>) (positions: ClArray<int>) (result: ClArray<'b>) resultLength ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (values: ClArray<'a>)
+                    (positions: ClArray<int>)
+                    (result: ClArray<'b>)
+                    resultLength ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < length then
-                    let position = positions.[gid]
-                    let value = values.[gid]
+                    if gid < length then
+                        let position = positions.[gid]
+                        let value = values.[gid]
 
-                    // seems like scatter (option scatter) ???
-                    if 0 <= position && position < resultLength then
-                        match (%op) value with
-                        | Some value -> result.[position] <- value
-                        | None -> () @>
+                        // seems like scatter (option scatter) ???
+                        if 0 <= position && position < resultLength then
+                            match (%op) value with
+                            | Some value -> result.[position] <- value
+                            | None -> ()
+            @>
 
         let kernel = clContext.Compile assign
 
@@ -487,14 +506,13 @@ module ClArray =
             if values.Length <> positions.Length then
                 failwith "lengths must be the same"
 
-            let ndRange =
-                Range1D.CreateValid(values.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(values.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () -> kernel.KernelFunc ndRange values.Length values positions result result.Length)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange values.Length values positions result result.Length)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -508,23 +526,17 @@ module ClArray =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let choose<'a, 'b> (predicate: Expr<'a -> 'b option>) (clContext: ClContext) workGroupSize =
-        let getBitmap =
-            map<'a, int> (Map.chooseBitmap predicate) clContext workGroupSize
+        let getBitmap = map<'a, int> (Map.chooseBitmap predicate) clContext workGroupSize
 
-        let prefixSum =
-            PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let prefixSum = PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        let assignValues =
-            assignOption predicate clContext workGroupSize
+        let assignValues = assignOption predicate clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (sourceValues: ClArray<'a>) ->
 
-            let positions =
-                getBitmap processor DeviceOnly sourceValues
+            let positions = getBitmap processor DeviceOnly sourceValues
 
-            let resultLength =
-                (prefixSum processor positions)
-                    .ToHostAndFree(processor)
+            let resultLength = (prefixSum processor positions).ToHostAndFree(processor)
 
             if resultLength = 0 then
                 positions.Free processor
@@ -551,46 +563,60 @@ module ClArray =
     let assignOption2 (op: Expr<'a -> 'b -> 'c option>) (clContext: ClContext) workGroupSize =
 
         let assign =
-            <@ fun (ndRange: Range1D) length (firstValues: ClArray<'a>) (secondValues: ClArray<'b>) (positions: ClArray<int>) (result: ClArray<'c>) resultLength ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    length
+                    (firstValues: ClArray<'a>)
+                    (secondValues: ClArray<'b>)
+                    (positions: ClArray<int>)
+                    (result: ClArray<'c>)
+                    resultLength ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < length then
-                    let position = positions.[gid]
+                    if gid < length then
+                        let position = positions.[gid]
 
-                    let leftValue = firstValues.[gid]
-                    let rightValue = secondValues.[gid]
+                        let leftValue = firstValues.[gid]
+                        let rightValue = secondValues.[gid]
 
-                    // seems like scatter2 (option scatter2) ???
-                    if 0 <= position && position < resultLength then
-                        match (%op) leftValue rightValue with
-                        | Some value -> result.[position] <- value
-                        | None -> () @>
+                        // seems like scatter2 (option scatter2) ???
+                        if 0 <= position && position < resultLength then
+                            match (%op) leftValue rightValue with
+                            | Some value -> result.[position] <- value
+                            | None -> ()
+            @>
 
         let kernel = clContext.Compile assign
 
-        fun (processor: MailboxProcessor<_>) (firstValues: ClArray<'a>) (secondValues: ClArray<'b>) (positions: ClArray<int>) (result: ClArray<'c>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (firstValues: ClArray<'a>)
+            (secondValues: ClArray<'b>)
+            (positions: ClArray<int>)
+            (result: ClArray<'c>) ->
 
-            if firstValues.Length <> secondValues.Length
-               || secondValues.Length <> positions.Length then
+            if
+                firstValues.Length <> secondValues.Length
+                || secondValues.Length <> positions.Length
+            then
                 failwith "lengths must be the same"
 
-            let ndRange =
-                Range1D.CreateValid(firstValues.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(firstValues.Length, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            firstValues.Length
-                            firstValues
-                            secondValues
-                            positions
-                            result
-                            result.Length)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc
+                        ndRange
+                        firstValues.Length
+                        firstValues
+                        secondValues
+                        positions
+                        result
+                        result.Length)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -607,20 +633,15 @@ module ClArray =
         let getBitmap =
             map2<'a, 'b, int> (Map.choose2Bitmap predicate) clContext workGroupSize
 
-        let prefixSum =
-            PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let prefixSum = PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        let assignValues =
-            assignOption2 predicate clContext workGroupSize
+        let assignValues = assignOption2 predicate clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (firstValues: ClArray<'a>) (secondValues: ClArray<'b>) ->
 
-            let positions =
-                getBitmap processor DeviceOnly firstValues secondValues
+            let positions = getBitmap processor DeviceOnly firstValues secondValues
 
-            let resultLength =
-                (prefixSum processor positions)
-                    .ToHostAndFree(processor)
+            let resultLength = (prefixSum processor positions).ToHostAndFree(processor)
 
             let result =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, resultLength)
@@ -637,14 +658,16 @@ module ClArray =
     let sub (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) startIndex count (sourceArray: ClArray<'a>) (targetChunk: ClArray<'a>) ->
+            <@
+                fun (ndRange: Range1D) startIndex count (sourceArray: ClArray<'a>) (targetChunk: ClArray<'a>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < count then
-                    let sourcePosition = gid + startIndex
+                    if gid < count then
+                        let sourcePosition = gid + startIndex
 
-                    targetChunk.[gid] <- sourceArray.[sourcePosition] @>
+                        targetChunk.[gid] <- sourceArray.[sourcePosition]
+            @>
 
         let kernel = clContext.Compile kernel
 
@@ -661,8 +684,7 @@ module ClArray =
             let result =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, count)
 
-            let ndRange =
-                Range1D.CreateValid(count, workGroupSize)
+            let ndRange = Range1D.CreateValid(count, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
@@ -696,8 +718,7 @@ module ClArray =
                 for i in 0 .. chunkCount - 1 do
                     let startIndex = i * chunkSize
 
-                    let count =
-                        min chunkSize (sourceArray.Length - startIndex)
+                    let count = min chunkSize (sourceArray.Length - startIndex)
 
                     yield lazy (sub startIndex count)
             }
@@ -724,19 +745,34 @@ module ClArray =
     let blit<'a> (clContext: ClContext) workGroupSize =
 
         let assign =
-            <@ fun (ndRange: Range1D) sourceIndex (sourceArray: ClArray<'a>) (targetArray: ClArray<'a>) targetPosition count ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    sourceIndex
+                    (sourceArray: ClArray<'a>)
+                    (targetArray: ClArray<'a>)
+                    targetPosition
+                    count ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < count then
-                    let readPosition = gid + sourceIndex
-                    let writePosition = gid + targetPosition
+                    if gid < count then
+                        let readPosition = gid + sourceIndex
 
-                    targetArray.[writePosition] <- sourceArray.[readPosition] @>
+                        let writePosition = gid + targetPosition
+
+                        targetArray.[writePosition] <- sourceArray.[readPosition]
+            @>
 
         let kernel = clContext.Compile assign
 
-        fun (processor: MailboxProcessor<_>) (sourceArray: ClArray<'a>) sourceIndex (targetArray: ClArray<'a>) targetIndex count ->
+        fun
+            (processor: MailboxProcessor<_>)
+            (sourceArray: ClArray<'a>)
+            sourceIndex
+            (targetArray: ClArray<'a>)
+            targetIndex
+            count ->
             if count = 0 then
                 // nothing to do
                 ()
@@ -744,22 +780,19 @@ module ClArray =
                 if count < 0 then
                     failwith "Count must be greater than zero"
 
-                if sourceIndex < 0
-                   && sourceIndex + count >= sourceArray.Length then
+                if sourceIndex < 0 && sourceIndex + count >= sourceArray.Length then
                     failwith "The source index does not match"
 
-                if targetIndex < 0
-                   && targetIndex + count >= targetArray.Length then
+                if targetIndex < 0 && targetIndex + count >= targetArray.Length then
                     failwith "The target index does not match"
 
-                let ndRange =
-                    Range1D.CreateValid(targetArray.Length, workGroupSize)
+                let ndRange = Range1D.CreateValid(targetArray.Length, workGroupSize)
 
                 let kernel = kernel.GetKernel()
 
                 processor.Post(
-                    Msg.MsgSetArguments
-                        (fun () -> kernel.KernelFunc ndRange sourceIndex sourceArray targetArray targetIndex count)
+                    Msg.MsgSetArguments(fun () ->
+                        kernel.KernelFunc ndRange sourceIndex sourceArray targetArray targetIndex count)
                 )
 
                 processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -775,9 +808,7 @@ module ClArray =
 
         fun (processor: MailboxProcessor<_>) allocationMode (sourceArrays: ClArray<'a> seq) ->
 
-            let resultLength =
-                sourceArrays
-                |> Seq.sumBy (fun array -> array.Length)
+            let resultLength = sourceArrays |> Seq.sumBy (fun array -> array.Length)
 
             let result =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, resultLength)
@@ -786,6 +817,7 @@ module ClArray =
             Seq.fold
                 (fun previousLength (array: ClArray<_>) ->
                     blit processor array 0 result previousLength array.Length
+
                     previousLength + array.Length)
                 0
                 sourceArrays
@@ -801,13 +833,16 @@ module ClArray =
     let fill (clContext: ClContext) workGroupSize =
 
         let fill =
-            <@ fun (ndRange: Range1D) firstPosition count (value: ClCell<'a>) (targetArray: ClArray<'a>) ->
+            <@
+                fun (ndRange: Range1D) firstPosition count (value: ClCell<'a>) (targetArray: ClArray<'a>) ->
 
-                let gid = ndRange.GlobalID0
-                let writePosition = gid + firstPosition
+                    let gid = ndRange.GlobalID0
 
-                if gid < count then
-                    targetArray.[writePosition] <- value.Value @>
+                    let writePosition = gid + firstPosition
+
+                    if gid < count then
+                        targetArray.[writePosition] <- value.Value
+            @>
 
         let kernel = clContext.Compile fill
 
@@ -821,8 +856,7 @@ module ClArray =
                 if firstPosition + count > targetArray.Length then
                     failwith "The array should fit completely"
 
-                let ndRange =
-                    Range1D.CreateValid(count, workGroupSize)
+                let ndRange = Range1D.CreateValid(count, workGroupSize)
 
                 let kernel = kernel.GetKernel()
 
@@ -840,14 +874,11 @@ module ClArray =
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let pairwise (clContext: ClContext) workGroupSize =
 
-        let idGather =
-            Gather.runInit Map.id clContext workGroupSize
+        let idGather = Gather.runInit Map.id clContext workGroupSize
 
-        let incGather =
-            Gather.runInit Map.inc clContext workGroupSize
+        let incGather = Gather.runInit Map.inc clContext workGroupSize
 
-        let map =
-            map2 <@ fun first second -> (first, second) @> clContext workGroupSize
+        let map = map2 <@ fun first second -> (first, second) @> clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (values: ClArray<'a>) ->
             if values.Length > 1 then
@@ -863,8 +894,7 @@ module ClArray =
 
                 incGather processor values secondItems
 
-                let result =
-                    map processor allocationMode firstItems secondItems
+                let result = map processor allocationMode firstItems secondItems
 
                 firstItems.Free processor
                 secondItems.Free processor
@@ -880,26 +910,28 @@ module ClArray =
         =
 
         let kernel =
-            <@ fun (ndRange: Range1D) length (values: ClArray<'a>) (value: ClCell<'a>) (result: ClCell<'b>) ->
+            <@
+                fun (ndRange: Range1D) length (values: ClArray<'a>) (value: ClCell<'a>) (result: ClCell<'b>) ->
 
-                let value = value.Value
-                let gid = ndRange.GlobalID0
+                    let value = value.Value
+                    let gid = ndRange.GlobalID0
 
-                if gid = 0 then
+                    if gid = 0 then
 
-                    result.Value <- (%lowerBound) length value values @>
+                        result.Value <- (%lowerBound) length value values
+            @>
 
         let program = clContext.Compile(kernel)
 
         fun (processor: MailboxProcessor<_>) (values: ClArray<'a>) (value: ClCell<'a>) ->
-            let result =
-                clContext.CreateClCell Unchecked.defaultof<'b>
+            let result = clContext.CreateClCell Unchecked.defaultof<'b>
 
             let kernel = program.GetKernel()
 
             let ndRange = Range1D.CreateValid(1, workGroupSize)
 
             processor.Post(Msg.MsgSetArguments(fun () -> kernel.KernelFunc ndRange values.Length values value result))
+
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
 
             result
@@ -933,12 +965,14 @@ module ClArray =
     let item<'a> (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) index (array: ClArray<'a>) (result: ClCell<'a>) ->
+            <@
+                fun (ndRange: Range1D) index (array: ClArray<'a>) (result: ClCell<'a>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid = 0 then
-                    result.Value <- array.[index] @>
+                    if gid = 0 then
+                        result.Value <- array.[index]
+            @>
 
         let program = clContext.Compile kernel
 
@@ -947,14 +981,14 @@ module ClArray =
             if index < 0 || index >= array.Length then
                 failwith "Index out of range"
 
-            let result =
-                clContext.CreateClCell Unchecked.defaultof<'a>
+            let result = clContext.CreateClCell Unchecked.defaultof<'a>
 
             let kernel = program.GetKernel()
 
             let ndRange = Range1D.CreateValid(1, workGroupSize)
 
             processor.Post(Msg.MsgSetArguments(fun () -> kernel.KernelFunc ndRange index array result))
+
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
 
             result
@@ -967,12 +1001,14 @@ module ClArray =
     let set<'a> (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) index (array: ClArray<'a>) (value: ClCell<'a>) ->
+            <@
+                fun (ndRange: Range1D) index (array: ClArray<'a>) (value: ClCell<'a>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid = 0 then
-                    array.[index] <- value.Value @>
+                    if gid = 0 then
+                        array.[index] <- value.Value
+            @>
 
         let program = clContext.Compile kernel
 
@@ -988,4 +1024,5 @@ module ClArray =
             let ndRange = Range1D.CreateValid(1, workGroupSize)
 
             processor.Post(Msg.MsgSetArguments(fun () -> kernel.KernelFunc ndRange index array value))
+
             processor.Post(Msg.CreateRunMsg<_, _> kernel)

@@ -7,22 +7,27 @@ module Scatter =
     let private general<'a> predicate (clContext: ClContext) workGroupSize =
 
         let run =
-            <@ fun (ndRange: Range1D) (positions: ClArray<int>) (positionsLength: int) (values: ClArray<'a>) (result: ClArray<'a>) (resultLength: int) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    (positions: ClArray<int>)
+                    (positionsLength: int)
+                    (values: ClArray<'a>)
+                    (result: ClArray<'a>)
+                    (resultLength: int) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < positionsLength then
-                    // positions lengths == values length
-                    let predicateResult =
-                        (%predicate) gid positionsLength positions
+                    if gid < positionsLength then
+                        // positions lengths == values length
+                        let predicateResult = (%predicate) gid positionsLength positions
 
-                    let position = positions.[gid]
+                        let position = positions.[gid]
 
-                    if predicateResult
-                       && 0 <= position
-                       && position < resultLength then
+                        if predicateResult && 0 <= position && position < resultLength then
 
-                        result.[positions.[gid]] <- values.[gid] @>
+                            result.[positions.[gid]] <- values.[gid]
+            @>
 
         let program = clContext.Compile(run)
 
@@ -33,14 +38,13 @@ module Scatter =
 
             let positionsLength = positions.Length
 
-            let ndRange =
-                Range1D.CreateValid(positionsLength, workGroupSize)
+            let ndRange = Range1D.CreateValid(positionsLength, workGroupSize)
 
             let kernel = program.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () -> kernel.KernelFunc ndRange positions positionsLength values result result.Length)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange positions positionsLength values result result.Length)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _>(kernel))
@@ -65,9 +69,7 @@ module Scatter =
     /// </code>
     /// </example>
     let firstOccurrence clContext =
-        general
-        <| Predicates.firstOccurrence ()
-        <| clContext
+        general <| Predicates.firstOccurrence () <| clContext
 
     /// <summary>
     /// Creates a new array from the given one where it is indicated by the array of positions at which position in the new array
@@ -88,29 +90,31 @@ module Scatter =
     /// </code>
     /// </example>
     let lastOccurrence clContext =
-        general
-        <| Predicates.lastOccurrence ()
-        <| clContext
+        general <| Predicates.lastOccurrence () <| clContext
 
     let private generalInit<'a> predicate valueMap (clContext: ClContext) workGroupSize =
 
         let run =
-            <@ fun (ndRange: Range1D) (positions: ClArray<int>) (positionsLength: int) (result: ClArray<'a>) (resultLength: int) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    (positions: ClArray<int>)
+                    (positionsLength: int)
+                    (result: ClArray<'a>)
+                    (resultLength: int) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < positionsLength then
-                    // positions lengths == values length
-                    let predicateResult =
-                        (%predicate) gid positionsLength positions
+                    if gid < positionsLength then
+                        // positions lengths == values length
+                        let predicateResult = (%predicate) gid positionsLength positions
 
-                    let position = positions.[gid]
+                        let position = positions.[gid]
 
-                    if predicateResult
-                       && 0 <= position
-                       && position < resultLength then
+                        if predicateResult && 0 <= position && position < resultLength then
 
-                        result.[positions.[gid]] <- (%valueMap) gid @>
+                            result.[positions.[gid]] <- (%valueMap) gid
+            @>
 
         let program = clContext.Compile(run)
 
@@ -118,8 +122,7 @@ module Scatter =
 
             let positionsLength = positions.Length
 
-            let ndRange =
-                Range1D.CreateValid(positionsLength, workGroupSize)
+            let ndRange = Range1D.CreateValid(positionsLength, workGroupSize)
 
             let kernel = program.GetKernel()
 
@@ -149,9 +152,7 @@ module Scatter =
     /// </example>
     /// <param name="valueMap">Maps global id to a value</param>
     let initFirstOccurrence<'a> valueMap =
-        generalInit<'a>
-        <| Predicates.firstOccurrence ()
-        <| valueMap
+        generalInit<'a> <| Predicates.firstOccurrence () <| valueMap
 
     /// <summary>
     /// Creates a new array from the given one where it is indicated by the array of positions at which position in the new array
@@ -173,6 +174,4 @@ module Scatter =
     /// </example>
     /// <param name="valueMap">Maps global id to a value</param>
     let initLastOccurrence<'a> valueMap =
-        generalInit<'a>
-        <| Predicates.lastOccurrence ()
-        <| valueMap
+        generalInit<'a> <| Predicates.lastOccurrence () <| valueMap

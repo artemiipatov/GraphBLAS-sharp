@@ -8,6 +8,7 @@ module ClContextExtensions =
         | HostInterop
 
     type ClContext with
+
         member this.CreateClArrayWithSpecificAllocationMode(mode, size: int) =
             match mode with
             | DeviceOnly ->
@@ -25,7 +26,7 @@ module ClContextExtensions =
                     allocationMode = AllocationMode.Default
                 )
 
-        member this.CreateClArrayWithSpecificAllocationMode(mode, array: 'a []) =
+        member this.CreateClArrayWithSpecificAllocationMode(mode, array: 'a[]) =
             match mode with
             | DeviceOnly ->
                 this.CreateClArray(

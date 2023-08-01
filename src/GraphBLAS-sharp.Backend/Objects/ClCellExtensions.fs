@@ -4,6 +4,7 @@ open Brahma.FSharp
 
 module ClCellExtensions =
     type ClCell<'a> with
+
         member this.ToHost(processor: MailboxProcessor<_>) =
             processor.PostAndReply(fun ch -> Msg.CreateToHostMsg<_>(this, (Array.zeroCreate<'a> 1), ch)).[0]
 

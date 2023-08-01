@@ -22,7 +22,7 @@ let wgSize = Utils.defaultWorkGroupSize
 let getCorrectnessTestName case datatype =
     $"Correctness on %s{datatype}, %A{case}"
 
-let checkResult isEqual op zero (baseMtx: 'a [,]) (actual: Matrix<'a>) =
+let checkResult isEqual op zero (baseMtx: 'a[,]) (actual: Matrix<'a>) =
     let rows = Array2D.length1 baseMtx
     let columns = Array2D.length2 baseMtx
     Expect.equal columns actual.ColumnCount "The number of columns should be the same."
@@ -45,8 +45,7 @@ let checkResult isEqual op zero (baseMtx: 'a [,]) (actual: Matrix<'a>) =
             actual2D.[actual.Rows.[i], actual.Columns.[i]] <- actual.Values.[i]
     | _ -> failwith "Resulting matrix should be converted to COO format."
 
-    "Arrays must be the same"
-    |> Utils.compare2DArrays isEqual actual2D expected2D
+    "Arrays must be the same" |> Utils.compare2DArrays isEqual actual2D expected2D
 
 let correctnessGenericTest
     zero
@@ -56,13 +55,12 @@ let correctnessGenericTest
     (isEqual: 'a -> 'a -> bool)
     q
     (case: OperationCase<MatrixFormat>)
-    (matrix: 'a [,])
+    (matrix: 'a[,])
     =
     match case.Format with
     | LIL -> ()
     | _ ->
-        let mtx =
-            Utils.createMatrixFromArray2D case.Format matrix (isEqual zero)
+        let mtx = Utils.createMatrixFromArray2D case.Format matrix (isEqual zero)
 
         if mtx.NNZ > 0 then
             try
@@ -78,10 +76,7 @@ let correctnessGenericTest
                 cooRes.Dispose q
                 res.Dispose q
 
-                logger.debug (
-                    eventX "Actual is {actual}"
-                    >> setField "actual" (sprintf "%A" actual)
-                )
+                logger.debug (eventX "Actual is {actual}" >> setField "actual" (sprintf "%A" actual))
 
                 checkResult isEqual op zero matrix actual
             with
@@ -97,8 +92,7 @@ let createTestMap case (zero: 'a) (constant: 'a) binOp isEqual opQ =
     let unaryOp = binOp constant
     let unaryOpQ = opQ zero constant
 
-    let map =
-        Operations.Matrix.map unaryOpQ context wgSize
+    let map = Operations.Matrix.map unaryOpQ context wgSize
 
     let toCOO = Matrix.toCOO context wgSize
 
@@ -112,8 +106,7 @@ let testFixturesMapNot case =
 
       createTestMap case false true (fun _ -> not) (=) (fun _ _ -> ArithmeticOperations.notOption) ]
 
-let notTests =
-    operationGPUTests "not" testFixturesMapNot
+let notTests = operationGPUTests "not" testFixturesMapNot
 
 let testFixturesMapAdd case =
     [ let context = case.TestContext.ClContext
@@ -129,8 +122,7 @@ let testFixturesMapAdd case =
 
       createTestMap case 0uy 10uy (+) (=) ArithmeticOperations.addLeftConst ]
 
-let addTests =
-    operationGPUTests "add" testFixturesMapAdd
+let addTests = operationGPUTests "add" testFixturesMapAdd
 
 let testFixturesMapMul case =
     [ let context = case.TestContext.ClContext
@@ -146,8 +138,6 @@ let testFixturesMapMul case =
 
       createTestMap case 0uy 10uy (*) (=) ArithmeticOperations.mulLeftConst ]
 
-let mulTests =
-    operationGPUTests "mul" testFixturesMapMul
+let mulTests = operationGPUTests "mul" testFixturesMapMul
 
-let allTests =
-    testList "Map" [ addTests; mulTests; notTests ]
+let allTests = testList "Map" [ addTests; mulTests; notTests ]

@@ -23,19 +23,13 @@ let makeTest<'a when 'a: equality> replicateFun (array: array<'a>) i =
     if array.Length > 0 && i > 0 then
         let clArray = context.CreateClArray array
 
-        let actual =
-            (replicateFun q HostInterop clArray i: ClArray<'a>)
-                .ToHostAndFree q
+        let actual = (replicateFun q HostInterop clArray i: ClArray<'a>).ToHostAndFree q
 
         clArray.Free q
 
-        logger.debug (
-            eventX $"Actual is {actual}"
-            >> setField "actual" $"%A{actual}"
-        )
+        logger.debug (eventX $"Actual is {actual}" >> setField "actual" $"%A{actual}")
 
-        let expected =
-            array |> Array.replicate i |> Array.concat
+        let expected = array |> Array.replicate i |> Array.concat
 
         $"Array should contains %i{i} copies of the original one"
         |> Expect.sequenceEqual actual expected
@@ -57,5 +51,4 @@ let testCases =
       createTest<float32>
       createTest<byte> ]
 
-let tests =
-    testCases |> testList "ClArray.replicate tests"
+let tests = testCases |> testList "ClArray.replicate tests"

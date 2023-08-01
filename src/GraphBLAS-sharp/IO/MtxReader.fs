@@ -30,9 +30,7 @@ type MtxReader(pathToFile: string) =
         while streamReader.Peek() = int '%' do
             streamReader.ReadLine() |> ignore
 
-        let size =
-            streamReader.ReadLine().Split(' ')
-            |> Array.map int
+        let size = streamReader.ReadLine().Split(' ') |> Array.map int
 
         let rowsCount = size.[0]
         let columnsCount = size.[1]
@@ -52,9 +50,7 @@ type MtxReader(pathToFile: string) =
             streamReader.ReadLine() |> ignore
 
         let matrixFromCoordinateFormat () =
-            let size =
-                streamReader.ReadLine().Split(' ')
-                |> Array.map int
+            let size = streamReader.ReadLine().Split(' ') |> Array.map int
 
             let n = size.[0]
             let m = size.[1]
@@ -71,35 +67,28 @@ type MtxReader(pathToFile: string) =
                     [ 0 .. nnz - 1 ]
                     |> List.map (fun _ -> streamReader.ReadLine().Split(' '))
                     |> Array.ofList
-                    |> Array.Parallel.map
-                        (fun line ->
-                            let i = int line.[0]
-                            let j = int line.[1]
+                    |> Array.Parallel.map (fun line ->
+                        let i = int line.[0]
+                        let j = int line.[1]
 
-                            let v =
-                                converter
-                                <| if line.Length > 2 then line.[2] else ""
+                        let v = converter <| if line.Length > 2 then line.[2] else ""
 
-                            struct (pack i j, v))
+                        struct (pack i j, v))
                     |> Array.sortBy (fun struct (packedIndex, _) -> packedIndex)
                 | Symmetric ->
                     [ 0 .. nnz - 1 ]
                     |> List.map (fun _ -> streamReader.ReadLine().Split(' '))
                     |> Array.ofList
-                    |> Array.Parallel.map
-                        (fun line ->
-                            let i = int line.[0]
-                            let j = int line.[1]
+                    |> Array.Parallel.map (fun line ->
+                        let i = int line.[0]
+                        let j = int line.[1]
 
-                            let v =
-                                converter
-                                <| if line.Length > 2 then line.[2] else ""
+                        let v = converter <| if line.Length > 2 then line.[2] else ""
 
-                            if i = j then
-                                [| struct (pack i j, v) |]
-                            else
-                                [| struct (pack i j, v)
-                                   struct (pack j i, v) |])
+                        if i = j then
+                            [| struct (pack i j, v) |]
+                        else
+                            [| struct (pack i j, v); struct (pack j i, v) |])
                     |> Array.concat
                     |> Array.sortBy (fun struct (packedIndex, _) -> packedIndex)
                 | _ ->
@@ -115,7 +104,9 @@ type MtxReader(pathToFile: string) =
                     let (rowIdx, columnIdx) = unpack packedIndex
                     // in mtx indecies start at 1
                     rows.[i] <- rowIdx - 1
+
                     cols.[i] <- columnIdx - 1
+
                     values.[i] <- value)
                 sortedData
 
@@ -132,6 +123,7 @@ type MtxReader(pathToFile: string) =
 and MtxObject =
     | MtxMatrix
     | MtxVector
+
     static member FromString str =
         match str with
         | "matrix" -> MtxMatrix
@@ -141,6 +133,7 @@ and MtxObject =
 and MtxFormat =
     | Coordinate
     | Array
+
     static member FromString str =
         match str with
         | "coordinate" -> Coordinate
@@ -153,6 +146,7 @@ and MtxField =
     | Complex
     | Integer
     | Pattern
+
     static member FromString str =
         match str with
         | "real" -> Real
@@ -167,6 +161,7 @@ and MtxSymmetry =
     | Symmetric
     | SkewSymmetric
     | Hermitian
+
     static member FromString str =
         match str with
         | "general" -> General

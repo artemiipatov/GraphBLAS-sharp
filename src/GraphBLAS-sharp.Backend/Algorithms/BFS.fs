@@ -18,11 +18,9 @@ module internal BFS =
         workGroupSize
         =
 
-        let spMVTo =
-            Operations.SpMVInplace add mul clContext workGroupSize
+        let spMVTo = Operations.SpMVInplace add mul clContext workGroupSize
 
-        let zeroCreate =
-            ClArray.zeroCreate clContext workGroupSize
+        let zeroCreate = ClArray.zeroCreate clContext workGroupSize
 
         let ofList = Vector.ofList clContext workGroupSize
 
@@ -32,16 +30,14 @@ module internal BFS =
         let fillSubVectorTo =
             Vector.assignByMaskInPlace (Convert.assignToOption Mask.assign) clContext workGroupSize
 
-        let containsNonZero =
-            ClArray.exists Predicates.isSome clContext workGroupSize
+        let containsNonZero = ClArray.exists Predicates.isSome clContext workGroupSize
 
         fun (queue: MailboxProcessor<Msg>) (matrix: ClMatrix<'a>) (source: int) ->
             let vertexCount = matrix.RowCount
 
             let levels = zeroCreate queue HostInterop vertexCount
 
-            let frontier =
-                ofList queue DeviceOnly Dense vertexCount [ source, 1 ]
+            let frontier = ofList queue DeviceOnly Dense vertexCount [ source, 1 ]
 
             match frontier with
             | ClVector.Dense front ->
@@ -61,9 +57,7 @@ module internal BFS =
                     maskComplementedTo queue front levels front
 
                     //Checking if front is empty
-                    stop <-
-                        not
-                        <| (containsNonZero queue front).ToHostAndFree queue
+                    stop <- not <| (containsNonZero queue front).ToHostAndFree queue
 
                 front.Free queue
 

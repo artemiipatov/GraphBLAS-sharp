@@ -23,9 +23,8 @@ let q = defaultContext.Queue
 
 q.Error.Add(fun e -> failwithf "%A" e)
 
-let makeTest context q formatFrom formatTo convertFun isZero (array: 'a [,]) =
-    let mtx =
-        Utils.createMatrixFromArray2D formatFrom array isZero
+let makeTest context q formatFrom formatTo convertFun isZero (array: 'a[,]) =
+    let mtx = Utils.createMatrixFromArray2D formatFrom array isZero
 
     if mtx.NNZ > 0 then
         let actual =
@@ -36,13 +35,9 @@ let makeTest context q formatFrom formatTo convertFun isZero (array: 'a [,]) =
             mAfter.Dispose q
             res
 
-        logger.debug (
-            eventX "Actual is {actual}"
-            >> setField "actual" (sprintf "%A" actual)
-        )
+        logger.debug (eventX "Actual is {actual}" >> setField "actual" (sprintf "%A" actual))
 
-        let expected =
-            Utils.createMatrixFromArray2D formatTo array isZero
+        let expected = Utils.createMatrixFromArray2D formatTo array isZero
 
         "Row count should be the same"
         |> Expect.equal actual.RowCount (Array2D.length1 array)
@@ -50,18 +45,15 @@ let makeTest context q formatFrom formatTo convertFun isZero (array: 'a [,]) =
         "Column count should be the same"
         |> Expect.equal actual.ColumnCount (Array2D.length2 array)
 
-        "Matrices should be equal"
-        |> Expect.equal actual expected
+        "Matrices should be equal" |> Expect.equal actual expected
 
 let createTest<'a when 'a: struct and 'a: equality> convertFun formatTo (isZero: 'a -> bool) =
-    let convertFun =
-        convertFun context Utils.defaultWorkGroupSize
+    let convertFun = convertFun context Utils.defaultWorkGroupSize
 
     Utils.listOfUnionCases<MatrixFormat>
-    |> List.map
-        (fun formatFrom ->
-            makeTest context q formatFrom formatTo convertFun isZero
-            |> testPropertyWithConfig config $"test on %A{typeof<'a>} from %A{formatFrom}")
+    |> List.map (fun formatFrom ->
+        makeTest context q formatFrom formatTo convertFun isZero
+        |> testPropertyWithConfig config $"test on %A{typeof<'a>} from %A{formatFrom}")
 
 let testFixtures formatTo =
     match formatTo with

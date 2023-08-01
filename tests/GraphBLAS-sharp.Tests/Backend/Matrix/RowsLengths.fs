@@ -17,7 +17,7 @@ let context = Context.defaultContext.ClContext
 
 let config = Utils.defaultConfig
 
-let makeTest isZero testFun (array: 'a [,]) =
+let makeTest isZero testFun (array: 'a[,]) =
 
     let matrix = Matrix.CSR.FromArray2D(array, isZero)
 
@@ -29,25 +29,17 @@ let makeTest isZero testFun (array: 'a [,]) =
         clMatrix.Dispose processor
         let actual = clActual.ToHostAndFree processor
 
-        let expected =
-            Array.zeroCreate <| Array2D.length1 array
+        let expected = Array.zeroCreate <| Array2D.length1 array
 
         // count nnz in each row
         for i in 0 .. Array2D.length1 array - 1 do
             let nnzRowCount =
                 array.[i, *]
-                |> Array.fold
-                    (fun count item ->
-                        if not <| isZero item then
-                            count + 1
-                        else
-                            count)
-                    0
+                |> Array.fold (fun count item -> if not <| isZero item then count + 1 else count) 0
 
             expected.[i] <- nnzRowCount
 
-        "Results must be the same"
-        |> Utils.compareArrays (=) actual expected
+        "Results must be the same" |> Utils.compareArrays (=) actual expected
 
 let createTest<'a when 'a: struct> (isZero: 'a -> bool) =
     CSR.Matrix.NNZInRows context Utils.defaultWorkGroupSize

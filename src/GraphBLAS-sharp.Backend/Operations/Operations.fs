@@ -22,20 +22,14 @@ module Operations =
         /// <param name="clContext">OpenCL context.</param>
         /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
         let map (op: Expr<'a option -> 'b option>) (clContext: ClContext) workGroupSize =
-            let mapSparse =
-                Sparse.Vector.map op clContext workGroupSize
+            let mapSparse = Sparse.Vector.map op clContext workGroupSize
 
-            let mapDense =
-                Dense.Vector.map op clContext workGroupSize
+            let mapDense = Dense.Vector.map op clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode matrix ->
                 match matrix with
-                | ClVector.Sparse v ->
-                    mapSparse processor allocationMode v
-                    |> ClVector.Sparse
-                | ClVector.Dense v ->
-                    mapDense processor allocationMode v
-                    |> ClVector.Dense
+                | ClVector.Sparse v -> mapSparse processor allocationMode v |> ClVector.Sparse
+                | ClVector.Dense v -> mapDense processor allocationMode v |> ClVector.Dense
 
         /// <summary>
         /// Builds a new vector whose values are the results of applying the given function
@@ -51,20 +45,16 @@ module Operations =
         /// <param name="clContext">OpenCL context.</param>
         /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
         let map2 (op: Expr<'a option -> 'b option -> 'c option>) (clContext: ClContext) workGroupSize =
-            let map2Dense =
-                Dense.Vector.map2 op clContext workGroupSize
+            let map2Dense = Dense.Vector.map2 op clContext workGroupSize
 
-            let map2Sparse =
-                Sparse.Vector.map2 op clContext workGroupSize
+            let map2Sparse = Sparse.Vector.map2 op clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode (leftVector: ClVector<'a>) (rightVector: ClVector<'b>) ->
                 match leftVector, rightVector with
                 | ClVector.Dense left, ClVector.Dense right ->
-                    ClVector.Dense
-                    <| map2Dense processor allocationMode left right
+                    ClVector.Dense <| map2Dense processor allocationMode left right
                 | ClVector.Sparse left, ClVector.Sparse right ->
-                    ClVector.Sparse
-                    <| map2Sparse processor allocationMode left right
+                    ClVector.Sparse <| map2Sparse processor allocationMode left right
                 | _ -> failwith "Vector formats are not matching."
 
         /// <summary>
@@ -81,20 +71,16 @@ module Operations =
         /// <param name="clContext">OpenCL context.</param>
         /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
         let map2AtLeastOne (op: Expr<AtLeastOne<'a, 'b> -> 'c option>) (clContext: ClContext) workGroupSize =
-            let map2Sparse =
-                Sparse.Vector.map2AtLeastOne op clContext workGroupSize
+            let map2Sparse = Sparse.Vector.map2AtLeastOne op clContext workGroupSize
 
-            let map2Dense =
-                Dense.Vector.map2AtLeastOne op clContext workGroupSize
+            let map2Dense = Dense.Vector.map2AtLeastOne op clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode (leftVector: ClVector<'a>) (rightVector: ClVector<'b>) ->
                 match leftVector, rightVector with
                 | ClVector.Sparse left, ClVector.Sparse right ->
-                    ClVector.Sparse
-                    <| map2Sparse processor allocationMode left right
+                    ClVector.Sparse <| map2Sparse processor allocationMode left right
                 | ClVector.Dense left, ClVector.Dense right ->
-                    ClVector.Dense
-                    <| map2Dense processor allocationMode left right
+                    ClVector.Dense <| map2Dense processor allocationMode left right
                 | _ -> failwith "Vector formats are not matching."
 
     module Matrix =
@@ -109,14 +95,11 @@ module Operations =
         /// <param name="clContext">OpenCL context.</param>
         /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
         let map (op: Expr<'a option -> 'b option>) (clContext: ClContext) workGroupSize =
-            let mapCOO =
-                COO.Matrix.map op clContext workGroupSize
+            let mapCOO = COO.Matrix.map op clContext workGroupSize
 
-            let mapCSR =
-                CSR.Matrix.map op clContext workGroupSize
+            let mapCSR = CSR.Matrix.map op clContext workGroupSize
 
-            let transposeCOO =
-                COO.Matrix.transposeInPlace clContext workGroupSize
+            let transposeCOO = COO.Matrix.transposeInPlace clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode matrix ->
                 match matrix with
@@ -142,23 +125,16 @@ module Operations =
         /// <param name="clContext">OpenCL context.</param>
         /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
         let map2 (op: Expr<'a option -> 'b option -> 'c option>) (clContext: ClContext) workGroupSize =
-            let map2COO =
-                COO.Matrix.map2 op clContext workGroupSize
+            let map2COO = COO.Matrix.map2 op clContext workGroupSize
 
-            let map2CSR =
-                CSR.Matrix.map2 op clContext workGroupSize
+            let map2CSR = CSR.Matrix.map2 op clContext workGroupSize
 
-            let transposeCOO =
-                COO.Matrix.transposeInPlace clContext workGroupSize
+            let transposeCOO = COO.Matrix.transposeInPlace clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode matrix1 matrix2 ->
                 match matrix1, matrix2 with
-                | ClMatrix.COO m1, ClMatrix.COO m2 ->
-                    map2COO processor allocationMode m1 m2
-                    |> ClMatrix.COO
-                | ClMatrix.CSR m1, ClMatrix.CSR m2 ->
-                    map2CSR processor allocationMode m1 m2
-                    |> ClMatrix.COO
+                | ClMatrix.COO m1, ClMatrix.COO m2 -> map2COO processor allocationMode m1 m2 |> ClMatrix.COO
+                | ClMatrix.CSR m1, ClMatrix.CSR m2 -> map2CSR processor allocationMode m1 m2 |> ClMatrix.COO
                 | ClMatrix.CSC m1, ClMatrix.CSC m2 ->
                     (map2CSR processor allocationMode m1.ToCSR m2.ToCSR)
                     |> transposeCOO processor
@@ -179,23 +155,16 @@ module Operations =
         /// <param name="clContext">OpenCL context.</param>
         /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
         let map2AtLeastOne (op: Expr<AtLeastOne<'a, 'b> -> 'c option>) (clContext: ClContext) workGroupSize =
-            let COOMap2 =
-                COO.Matrix.map2AtLeastOne clContext op workGroupSize
+            let COOMap2 = COO.Matrix.map2AtLeastOne clContext op workGroupSize
 
-            let CSRMap2 =
-                CSR.Matrix.map2AtLeastOne clContext op workGroupSize
+            let CSRMap2 = CSR.Matrix.map2AtLeastOne clContext op workGroupSize
 
-            let COOTranspose =
-                COO.Matrix.transposeInPlace clContext workGroupSize
+            let COOTranspose = COO.Matrix.transposeInPlace clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode matrix1 matrix2 ->
                 match matrix1, matrix2 with
-                | ClMatrix.COO m1, ClMatrix.COO m2 ->
-                    COOMap2 processor allocationMode m1 m2
-                    |> ClMatrix.COO
-                | ClMatrix.CSR m1, ClMatrix.CSR m2 ->
-                    CSRMap2 processor allocationMode m1 m2
-                    |> ClMatrix.COO
+                | ClMatrix.COO m1, ClMatrix.COO m2 -> COOMap2 processor allocationMode m1 m2 |> ClMatrix.COO
+                | ClMatrix.CSR m1, ClMatrix.CSR m2 -> CSRMap2 processor allocationMode m1 m2 |> ClMatrix.COO
                 | ClMatrix.CSC m1, ClMatrix.CSC m2 ->
                     (CSRMap2 processor allocationMode m1.ToCSR m2.ToCSR)
                     |> COOTranspose processor
@@ -217,8 +186,7 @@ module Operations =
         workGroupSize
         =
 
-        let runTo =
-            SpMV.runTo add mul clContext workGroupSize
+        let runTo = SpMV.runTo add mul clContext workGroupSize
 
         fun (queue: MailboxProcessor<_>) (matrix: ClMatrix<'a>) (vector: ClVector<'b>) (result: ClVector<'c>) ->
             match matrix, vector, result with
@@ -267,8 +235,7 @@ module Operations =
             workGroupSize
             =
 
-            let runCSRnCSC =
-                SpGeMM.Masked.run opAdd opMul clContext workGroupSize
+            let runCSRnCSC = SpGeMM.Masked.run opAdd opMul clContext workGroupSize
 
             fun (queue: MailboxProcessor<_>) (matrix1: ClMatrix<'a>) (matrix2: ClMatrix<'b>) (mask: ClMatrix<_>) ->
                 match matrix1, matrix2, mask with
@@ -289,20 +256,14 @@ module Operations =
             workGroupSize
             =
 
-            let run =
-                SpGeMM.Expand.run opAdd opMul clContext workGroupSize
+            let run = SpGeMM.Expand.run opAdd opMul clContext workGroupSize
 
             fun (processor: MailboxProcessor<_>) allocationMode (leftMatrix: ClMatrix<'a>) (rightMatrix: ClMatrix<'b>) ->
                 match leftMatrix, rightMatrix with
                 | ClMatrix.CSR leftMatrix, ClMatrix.CSR rightMatrix ->
-                    let allocCapacity =
-                        List.max [ sizeof<'a>
-                                   sizeof<'c>
-                                   sizeof<'b> ]
-                        * 1<Byte>
+                    let allocCapacity = List.max [ sizeof<'a>; sizeof<'c>; sizeof<'b> ] * 1<Byte>
 
-                    let resultCapacity =
-                        (clContext.MaxMemAllocSize / allocCapacity) / 3
+                    let resultCapacity = (clContext.MaxMemAllocSize / allocCapacity) / 3
 
                     run processor allocationMode resultCapacity leftMatrix rightMatrix
                 | _ -> failwith "Matrix formats are not matching"

@@ -13,9 +13,9 @@ let processor = Context.defaultContext.Queue
 
 let config =
     { Utils.defaultConfig with
-          arbitrary = [ typeof<Generators.Fill> ] }
+        arbitrary = [ typeof<Generators.Fill> ] }
 
-let makeTest<'a> isEqual testFun (value: 'a, targetPosition, count, target: 'a []) =
+let makeTest<'a> isEqual testFun (value: 'a, targetPosition, count, target: 'a[]) =
     if target.Length > 0 then
 
         let clTarget = context.CreateClArray target
@@ -29,8 +29,7 @@ let makeTest<'a> isEqual testFun (value: 'a, targetPosition, count, target: 'a [
         // write to target
         Array.fill target targetPosition count value
 
-        "Results must be the same"
-        |> Utils.compareArrays isEqual actual target
+        "Results must be the same" |> Utils.compareArrays isEqual actual target
 
 let createTest<'a> isEqual =
     ClArray.fill context Utils.defaultWorkGroupSize

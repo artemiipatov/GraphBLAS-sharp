@@ -15,33 +15,52 @@ module internal Map =
     let private preparePositions<'a, 'b> op (clContext: ClContext) workGroupSize =
 
         let preparePositions (op: Expr<'a option -> 'b option>) =
-            <@ fun (ndRange: Range1D) rowCount columnCount (values: ClArray<'a>) (rowPointers: ClArray<int>) (columns: ClArray<int>) (resultBitmap: ClArray<int>) (resultValues: ClArray<'b>) (resultRows: ClArray<int>) (resultColumns: ClArray<int>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    rowCount
+                    columnCount
+                    (values: ClArray<'a>)
+                    (rowPointers: ClArray<int>)
+                    (columns: ClArray<int>)
+                    (resultBitmap: ClArray<int>)
+                    (resultValues: ClArray<'b>)
+                    (resultRows: ClArray<int>)
+                    (resultColumns: ClArray<int>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < rowCount * columnCount then
+                    if gid < rowCount * columnCount then
 
-                    let columnIndex = gid % columnCount
-                    let rowIndex = gid / columnCount
+                        let columnIndex = gid % columnCount
 
-                    let startIndex = rowPointers.[rowIndex]
-                    let lastIndex = rowPointers.[rowIndex + 1] - 1
+                        let rowIndex = gid / columnCount
 
-                    let value =
-                        (%Search.Bin.inRange) startIndex lastIndex columnIndex columns values
+                        let startIndex = rowPointers.[rowIndex]
 
-                    match (%op) value with
-                    | Some resultValue ->
-                        resultValues.[gid] <- resultValue
-                        resultRows.[gid] <- rowIndex
-                        resultColumns.[gid] <- columnIndex
+                        let lastIndex = rowPointers.[rowIndex + 1] - 1
 
-                        resultBitmap.[gid] <- 1
-                    | None -> resultBitmap.[gid] <- 0 @>
+                        let value = (%Search.Bin.inRange) startIndex lastIndex columnIndex columns values
+
+                        match (%op) value with
+                        | Some resultValue ->
+                            resultValues.[gid] <- resultValue
+                            resultRows.[gid] <- rowIndex
+                            resultColumns.[gid] <- columnIndex
+
+                            resultBitmap.[gid] <- 1
+                        | None -> resultBitmap.[gid] <- 0
+            @>
 
         let kernel = clContext.Compile <| preparePositions op
 
-        fun (processor: MailboxProcessor<_>) rowCount columnCount (values: ClArray<'a>) (rowPointers: ClArray<int>) (columns: ClArray<int>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            rowCount
+            columnCount
+            (values: ClArray<'a>)
+            (rowPointers: ClArray<int>)
+            (columns: ClArray<int>) ->
 
             let (resultLength: int) = columnCount * rowCount
 
@@ -57,25 +76,23 @@ module internal Map =
             let resultValues =
                 clContext.CreateClArrayWithSpecificAllocationMode<'b>(DeviceOnly, resultLength)
 
-            let ndRange =
-                Range1D.CreateValid(resultLength, workGroupSize)
+            let ndRange = Range1D.CreateValid(resultLength, workGroupSize)
 
             let kernel = kernel.GetKernel()
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            rowCount
-                            columnCount
-                            values
-                            rowPointers
-                            columns
-                            resultBitmap
-                            resultValues
-                            resultRows
-                            resultColumns)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc
+                        ndRange
+                        rowCount
+                        columnCount
+                        values
+                        rowPointers
+                        columns
+                        resultBitmap
+                        resultValues
+                        resultRows
+                        resultColumns)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -88,11 +105,9 @@ module internal Map =
         workGroupSize
         =
 
-        let map =
-            preparePositions op clContext workGroupSize
+        let map = preparePositions op clContext workGroupSize
 
-        let setPositions =
-            Common.setPositions<'b> clContext workGroupSize
+        let setPositions = Common.setPositions<'b> clContext workGroupSize
 
         fun (queue: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
 
@@ -118,29 +133,43 @@ module internal Map =
         let private preparePositions<'a, 'b, 'c when 'b: struct> (clContext: ClContext) workGroupSize op =
 
             let preparePositions (op: Expr<'a option -> 'b option -> 'c option>) =
-                <@ fun (ndRange: Range1D) (operand: ClCell<'a option>) rowCount columnCount (values: ClArray<'b>) (rowPointers: ClArray<int>) (columns: ClArray<int>) (resultBitmap: ClArray<int>) (resultValues: ClArray<'c>) (resultRows: ClArray<int>) (resultColumns: ClArray<int>) ->
+                <@
+                    fun
+                        (ndRange: Range1D)
+                        (operand: ClCell<'a option>)
+                        rowCount
+                        columnCount
+                        (values: ClArray<'b>)
+                        (rowPointers: ClArray<int>)
+                        (columns: ClArray<int>)
+                        (resultBitmap: ClArray<int>)
+                        (resultValues: ClArray<'c>)
+                        (resultRows: ClArray<int>)
+                        (resultColumns: ClArray<int>) ->
 
-                    let gid = ndRange.GlobalID0
+                        let gid = ndRange.GlobalID0
 
-                    if gid < rowCount * columnCount then
+                        if gid < rowCount * columnCount then
 
-                        let columnIndex = gid % columnCount
-                        let rowIndex = gid / columnCount
+                            let columnIndex = gid % columnCount
 
-                        let startIndex = rowPointers.[rowIndex]
-                        let lastIndex = rowPointers.[rowIndex + 1] - 1
+                            let rowIndex = gid / columnCount
 
-                        let value =
-                            (%Search.Bin.inRange) startIndex lastIndex columnIndex columns values
+                            let startIndex = rowPointers.[rowIndex]
 
-                        match (%op) operand.Value value with
-                        | Some resultValue ->
-                            resultValues.[gid] <- resultValue
-                            resultRows.[gid] <- rowIndex
-                            resultColumns.[gid] <- columnIndex
+                            let lastIndex = rowPointers.[rowIndex + 1] - 1
 
-                            resultBitmap.[gid] <- 1
-                        | None -> resultBitmap.[gid] <- 0 @>
+                            let value = (%Search.Bin.inRange) startIndex lastIndex columnIndex columns values
+
+                            match (%op) operand.Value value with
+                            | Some resultValue ->
+                                resultValues.[gid] <- resultValue
+                                resultRows.[gid] <- rowIndex
+                                resultColumns.[gid] <- columnIndex
+
+                                resultBitmap.[gid] <- 1
+                            | None -> resultBitmap.[gid] <- 0
+                @>
 
             let kernel = clContext.Compile <| preparePositions op
 
@@ -160,26 +189,24 @@ module internal Map =
                 let resultValues =
                     clContext.CreateClArrayWithSpecificAllocationMode<'c>(DeviceOnly, resultLength)
 
-                let ndRange =
-                    Range1D.CreateValid(resultLength, workGroupSize)
+                let ndRange = Range1D.CreateValid(resultLength, workGroupSize)
 
                 let kernel = kernel.GetKernel()
 
                 processor.Post(
-                    Msg.MsgSetArguments
-                        (fun () ->
-                            kernel.KernelFunc
-                                ndRange
-                                operand
-                                matrix.RowCount
-                                matrix.ColumnCount
-                                matrix.Values
-                                matrix.RowPointers
-                                matrix.Columns
-                                resultBitmap
-                                resultValues
-                                resultRows
-                                resultColumns)
+                    Msg.MsgSetArguments(fun () ->
+                        kernel.KernelFunc
+                            ndRange
+                            operand
+                            matrix.RowCount
+                            matrix.ColumnCount
+                            matrix.Values
+                            matrix.RowPointers
+                            matrix.Columns
+                            resultBitmap
+                            resultValues
+                            resultRows
+                            resultColumns)
                 )
 
                 processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -192,11 +219,9 @@ module internal Map =
             workGroupSize
             =
 
-            let mapWithValue =
-                preparePositions clContext workGroupSize op
+            let mapWithValue = preparePositions clContext workGroupSize op
 
-            let setPositions =
-                Common.setPositionsOption<'c> clContext workGroupSize
+            let setPositions = Common.setPositionsOption<'c> clContext workGroupSize
 
             fun (queue: MailboxProcessor<_>) allocationMode (value: 'a option) (matrix: ClMatrix.CSR<'b>) ->
                 let valueClCell = clContext.CreateClCell value
@@ -205,8 +230,7 @@ module internal Map =
 
                 valueClCell.Free queue
 
-                let result =
-                    setPositions queue allocationMode rows columns values bitmap
+                let result = setPositions queue allocationMode rows columns values bitmap
 
                 bitmap.Free queue
                 values.Free queue
@@ -214,11 +238,10 @@ module internal Map =
                 columns.Free queue
 
                 result
-                |> Option.map
-                    (fun (resRows, resCols, resValues, _) ->
-                        { Context = clContext
-                          RowCount = matrix.RowCount
-                          ColumnCount = matrix.ColumnCount
-                          Rows = resRows
-                          Columns = resCols
-                          Values = resValues })
+                |> Option.map (fun (resRows, resCols, resValues, _) ->
+                    { Context = clContext
+                      RowCount = matrix.RowCount
+                      ColumnCount = matrix.ColumnCount
+                      Rows = resRows
+                      Columns = resCols
+                      Values = resValues })

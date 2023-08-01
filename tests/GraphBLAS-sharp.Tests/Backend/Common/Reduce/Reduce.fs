@@ -19,15 +19,12 @@ let wgSize = Utils.defaultWorkGroupSize
 
 let q = Context.defaultContext.Queue
 
-let makeTest (reduce: MailboxProcessor<_> -> ClArray<'a> -> ClCell<'a>) plus zero (array: 'a []) =
+let makeTest (reduce: MailboxProcessor<_> -> ClArray<'a> -> ClCell<'a>) plus zero (array: 'a[]) =
 
     if array.Length > 0 then
         let reduce = reduce q
 
-        logger.debug (
-            eventX "Filtered array is {array}\n"
-            >> setField "array" (sprintf "%A" array)
-        )
+        logger.debug (eventX "Filtered array is {array}\n" >> setField "array" (sprintf "%A" array))
 
         let actualSum =
             let clArray = context.CreateClArray array
@@ -36,10 +33,7 @@ let makeTest (reduce: MailboxProcessor<_> -> ClArray<'a> -> ClCell<'a>) plus zer
             clArray.Free q
             total.ToHostAndFree q
 
-        logger.debug (
-            eventX "Actual is {actual}\n"
-            >> setField "actual" (sprintf "%A" actualSum)
-        )
+        logger.debug (eventX "Actual is {actual}\n" >> setField "actual" (sprintf "%A" actualSum))
 
         let expectedSum = Array.fold plus zero array
 
@@ -48,12 +42,10 @@ let makeTest (reduce: MailboxProcessor<_> -> ClArray<'a> -> ClCell<'a>) plus zer
             >> setField "expected" (sprintf "%A" expectedSum)
         )
 
-        "Total sums should be equal"
-        |> Expect.equal actualSum expectedSum
+        "Total sums should be equal" |> Expect.equal actualSum expectedSum
 
 let testFixtures plus plusQ zero name =
-    let reduce =
-        Common.Reduce.reduce plusQ context wgSize
+    let reduce = Common.Reduce.reduce plusQ context wgSize
 
     makeTest reduce plus zero
     |> testPropertyWithConfig config $"Correctness on %s{name}"

@@ -16,8 +16,7 @@ module Matrix =
 
             let rowsPointers =
                 matrix.Rows
-                |> List.map
-                    (function
+                |> List.map (function
                     | None -> 0
                     | Some vector -> vector.Values.Length)
                 |> List.toArray
@@ -31,11 +30,9 @@ module Matrix =
                 |> List.map (fun vector -> vector.Values, vector.Indices)
                 |> List.unzip
 
-            let values =
-                concatValues processor allocationMode valuesByRows
+            let values = concatValues processor allocationMode valuesByRows
 
-            let columnsIndices =
-                concatIndices processor allocationMode columnsIndicesByRows
+            let columnsIndices = concatIndices processor allocationMode columnsIndicesByRows
 
             { Context = clContext
               RowCount = matrix.RowCount

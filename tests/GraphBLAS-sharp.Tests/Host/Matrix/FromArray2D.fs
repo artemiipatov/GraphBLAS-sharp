@@ -6,7 +6,7 @@ open GraphBLAS.FSharp.Tests
 
 let config = Utils.defaultConfig
 
-let checkPointers isEqual zero array slice counter pointers (matrixValues: 'a []) (matrixIndices: int []) =
+let checkPointers isEqual zero array slice counter pointers (matrixValues: 'a[]) (matrixIndices: int[]) =
     for i in 0 .. counter - 1 do
         let expectedIndices, expectedValues =
             slice array i
@@ -15,13 +15,12 @@ let checkPointers isEqual zero array slice counter pointers (matrixValues: 'a []
             |> Array.unzip
 
         let startRowPosition = Array.item i pointers
+
         let endRowPosition = pointers.[i + 1] - 1
 
-        let actualValues =
-            matrixValues.[startRowPosition..endRowPosition]
+        let actualValues = matrixValues.[startRowPosition..endRowPosition]
 
-        let actualIndices =
-            matrixIndices.[startRowPosition..endRowPosition]
+        let actualIndices = matrixIndices.[startRowPosition..endRowPosition]
 
         "Values must be the same"
         |> Utils.compareArrays isEqual actualValues expectedValues
@@ -29,23 +28,19 @@ let checkPointers isEqual zero array slice counter pointers (matrixValues: 'a []
         "Indices must be the same"
         |> Utils.compareArrays (=) actualIndices expectedIndices
 
-let makeTest isEqual zero createMatrix (array: 'a [,]) =
+let makeTest isEqual zero createMatrix (array: 'a[,]) =
     let matrix: Matrix<_> = createMatrix (isEqual zero) array
 
     let arrayRowCount = Array2D.length1 array
     let arrayColumnCount = Array2D.length2 array
 
-    "Row count must be the same"
-    |> Expect.equal matrix.RowCount arrayRowCount
+    "Row count must be the same" |> Expect.equal matrix.RowCount arrayRowCount
 
     "Column count must be the same"
     |> Expect.equal matrix.ColumnCount arrayColumnCount
 
     let nonZeroValues =
-        array
-        |> Seq.cast<'a>
-        |> Seq.filter ((<<) not <| isEqual zero)
-        |> Seq.toArray
+        array |> Seq.cast<'a> |> Seq.filter ((<<) not <| isEqual zero) |> Seq.toArray
 
     let checkPointers = checkPointers isEqual zero array
 
@@ -58,7 +53,7 @@ let makeTest isEqual zero createMatrix (array: 'a [,]) =
         |> Expect.isTrue (matrix.RowPointers.Length = matrix.RowCount + 1)
 
         checkPointers
-            (fun (array: 'a [,]) i -> array.[i, *])
+            (fun (array: 'a[,]) i -> array.[i, *])
             arrayRowCount
             matrix.RowPointers
             matrix.Values
@@ -109,56 +104,30 @@ let makeTest isEqual zero createMatrix (array: 'a [,]) =
         |> Expect.equal matrix.Rows.Length (Array2D.length1 array)
 
         matrix.Rows
-        |> Seq.iteri
-            (fun index ->
-                function
-                | Some actualRow ->
-                    let expectedIndices, expectedValues =
-                        array.[index, *]
-                        |> Array.mapi (fun index value -> (index, value))
-                        |> Array.filter (fun (_, value) -> ((<<) not <| isEqual zero) value)
-                        |> Array.unzip
+        |> Seq.iteri (fun index ->
+            function
+            | Some actualRow ->
+                let expectedIndices, expectedValues =
+                    array.[index, *]
+                    |> Array.mapi (fun index value -> (index, value))
+                    |> Array.filter (fun (_, value) -> ((<<) not <| isEqual zero) value)
+                    |> Array.unzip
 
-                    "Values must be the same"
-                    |> Utils.compareArrays isEqual actualRow.Values expectedValues
+                "Values must be the same"
+                |> Utils.compareArrays isEqual actualRow.Values expectedValues
 
-                    "Indices must be the same"
-                    |> Utils.compareArrays (=) actualRow.Indices expectedIndices
-                | None ->
-                    "No non zero items in row"
-                    |> Expect.isFalse (Array.exists ((<<) not <| isEqual zero) array.[index, *]))
+                "Indices must be the same"
+                |> Utils.compareArrays (=) actualRow.Indices expectedIndices
+            | None ->
+                "No non zero items in row"
+                |> Expect.isFalse (Array.exists ((<<) not <| isEqual zero) array.[index, *]))
 
 let createTest name isEqual zero convert =
-    makeTest isEqual zero convert
-    |> testPropertyWithConfig config name
+    makeTest isEqual zero convert |> testPropertyWithConfig config name
 
 let tests =
-    [ createTest
-        "CSR"
-        (=)
-        0
-        (fun isZero array ->
-            Matrix.CSR
-            <| Matrix.CSR.FromArray2D(array, isZero))
-      createTest
-          "COO"
-          (=)
-          0
-          (fun isZero array ->
-              Matrix.COO
-              <| Matrix.COO.FromArray2D(array, isZero))
-      createTest
-          "CSC"
-          (=)
-          0
-          (fun isZero array ->
-              Matrix.CSC
-              <| Matrix.CSC.FromArray2D(array, isZero))
-      createTest
-          "LIL"
-          (=)
-          0
-          (fun isZero array ->
-              Matrix.LIL
-              <| Matrix.LIL.FromArray2D(array, isZero)) ]
+    [ createTest "CSR" (=) 0 (fun isZero array -> Matrix.CSR <| Matrix.CSR.FromArray2D(array, isZero))
+      createTest "COO" (=) 0 (fun isZero array -> Matrix.COO <| Matrix.COO.FromArray2D(array, isZero))
+      createTest "CSC" (=) 0 (fun isZero array -> Matrix.CSC <| Matrix.CSC.FromArray2D(array, isZero))
+      createTest "LIL" (=) 0 (fun isZero array -> Matrix.LIL <| Matrix.LIL.FromArray2D(array, isZero)) ]
     |> testList "FromArray2D"

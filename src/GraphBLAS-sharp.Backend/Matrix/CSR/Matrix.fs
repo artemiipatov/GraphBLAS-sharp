@@ -20,15 +20,16 @@ module Matrix =
     let expandRowPointers (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) columnsLength pointersLength (pointers: ClArray<int>) (results: ClArray<int>) ->
+            <@
+                fun (ndRange: Range1D) columnsLength pointersLength (pointers: ClArray<int>) (results: ClArray<int>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid < columnsLength then
-                    let result =
-                        (%Search.Bin.lowerBound) pointersLength gid pointers
+                    if gid < columnsLength then
+                        let result = (%Search.Bin.lowerBound) pointersLength gid pointers
 
-                    results.[gid] <- result - 1 @>
+                        results.[gid] <- result - 1
+            @>
 
         let program = clContext.Compile kernel
 
@@ -39,18 +40,11 @@ module Matrix =
 
             let kernel = program.GetKernel()
 
-            let ndRange =
-                Range1D.CreateValid(matrix.Columns.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(matrix.Columns.Length, workGroupSize)
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            matrix.Columns.Length
-                            matrix.RowPointers.Length
-                            matrix.RowPointers
-                            rows)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange matrix.Columns.Length matrix.RowPointers.Length matrix.RowPointers rows)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -65,15 +59,25 @@ module Matrix =
     let item<'a when 'a: struct> (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) row column (rowPointers: ClArray<int>) (columns: ClArray<int>) (values: ClArray<'a>) (result: ClCell<'a option>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    row
+                    column
+                    (rowPointers: ClArray<int>)
+                    (columns: ClArray<int>)
+                    (values: ClArray<'a>)
+                    (result: ClCell<'a option>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                if gid = 0 then
-                    let firstIndex = rowPointers.[row]
-                    let lastIndex = rowPointers.[row + 1] - 1
+                    if gid = 0 then
+                        let firstIndex = rowPointers.[row]
 
-                    result.Value <- (%Search.Bin.inRange) firstIndex lastIndex column columns values @>
+                        let lastIndex = rowPointers.[row + 1] - 1
+
+                        result.Value <- (%Search.Bin.inRange) firstIndex lastIndex column columns values
+            @>
 
         let program = clContext.Compile kernel
 
@@ -92,9 +96,8 @@ module Matrix =
             let ndRange = Range1D.CreateValid(1, workGroupSize)
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc ndRange row column matrix.RowPointers matrix.Columns matrix.Values result)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange row column matrix.RowPointers matrix.Columns matrix.Values result)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -109,18 +112,26 @@ module Matrix =
     let subRows (clContext: ClContext) workGroupSize =
 
         let kernel =
-            <@ fun (ndRange: Range1D) resultLength sourceRow pointersLength (pointers: ClArray<int>) (results: ClArray<int>) ->
+            <@
+                fun
+                    (ndRange: Range1D)
+                    resultLength
+                    sourceRow
+                    pointersLength
+                    (pointers: ClArray<int>)
+                    (results: ClArray<int>) ->
 
-                let gid = ndRange.GlobalID0
+                    let gid = ndRange.GlobalID0
 
-                let shift = pointers.[sourceRow]
-                let shiftedId = gid + shift
+                    let shift = pointers.[sourceRow]
 
-                if gid < resultLength then
-                    let result =
-                        (%Search.Bin.lowerBound) pointersLength shiftedId pointers
+                    let shiftedId = gid + shift
 
-                    results.[gid] <- result - 1 @>
+                    if gid < resultLength then
+                        let result = (%Search.Bin.lowerBound) pointersLength shiftedId pointers
+
+                        results.[gid] <- result - 1
+            @>
 
         let program = clContext.Compile kernel
 
@@ -141,28 +152,18 @@ module Matrix =
             // extract rows
             let rowPointers = matrix.RowPointers.ToHost processor
 
-            let resultLength =
-                rowPointers.[startIndex + count]
-                - rowPointers.[startIndex]
+            let resultLength = rowPointers.[startIndex + count] - rowPointers.[startIndex]
 
             let rows =
                 clContext.CreateClArrayWithSpecificAllocationMode(allocationMode, resultLength)
 
             let kernel = program.GetKernel()
 
-            let ndRange =
-                Range1D.CreateValid(matrix.Columns.Length, workGroupSize)
+            let ndRange = Range1D.CreateValid(matrix.Columns.Length, workGroupSize)
 
             processor.Post(
-                Msg.MsgSetArguments
-                    (fun () ->
-                        kernel.KernelFunc
-                            ndRange
-                            resultLength
-                            startIndex
-                            matrix.RowPointers.Length
-                            matrix.RowPointers
-                            rows)
+                Msg.MsgSetArguments(fun () ->
+                    kernel.KernelFunc ndRange resultLength startIndex matrix.RowPointers.Length matrix.RowPointers rows)
             )
 
             processor.Post(Msg.CreateRunMsg<_, _> kernel)
@@ -195,8 +196,7 @@ module Matrix =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let toCOO (clContext: ClContext) workGroupSize =
-        let prepare =
-            expandRowPointers clContext workGroupSize
+        let prepare = expandRowPointers clContext workGroupSize
 
         let copy = ClArray.copy clContext workGroupSize
 
@@ -205,11 +205,9 @@ module Matrix =
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
             let rows = prepare processor allocationMode matrix
 
-            let cols =
-                copy processor allocationMode matrix.Columns
+            let cols = copy processor allocationMode matrix.Columns
 
-            let values =
-                copyData processor allocationMode matrix.Values
+            let values = copyData processor allocationMode matrix.Values
 
             { Context = clContext
               RowCount = matrix.RowCount
@@ -225,8 +223,7 @@ module Matrix =
     /// <param name="clContext">OpenCL context.</param>
     /// <param name="workGroupSize">Should be a power of 2 and greater than 1.</param>
     let toCOOInPlace (clContext: ClContext) workGroupSize =
-        let prepare =
-            expandRowPointers clContext workGroupSize
+        let prepare = expandRowPointers clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
             let rows = prepare processor allocationMode matrix
@@ -292,11 +289,9 @@ module Matrix =
 
         let toCOOInPlace = toCOOInPlace clContext workGroupSize
 
-        let transposeInPlace =
-            COO.Matrix.transposeInPlace clContext workGroupSize
+        let transposeInPlace = COO.Matrix.transposeInPlace clContext workGroupSize
 
-        let toCSRInPlace =
-            COO.Matrix.toCSRInPlace clContext workGroupSize
+        let toCSRInPlace = COO.Matrix.toCSRInPlace clContext workGroupSize
 
         fun (queue: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
             toCOOInPlace queue allocationMode matrix
@@ -312,11 +307,9 @@ module Matrix =
 
         let toCOO = toCOO clContext workGroupSize
 
-        let transposeInPlace =
-            COO.Matrix.transposeInPlace clContext workGroupSize
+        let transposeInPlace = COO.Matrix.transposeInPlace clContext workGroupSize
 
-        let toCSRInPlace =
-            COO.Matrix.toCSRInPlace clContext workGroupSize
+        let toCSRInPlace = COO.Matrix.toCSRInPlace clContext workGroupSize
 
         fun (queue: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
             toCOO queue allocationMode matrix
@@ -336,11 +329,9 @@ module Matrix =
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
 
-            let getChunkValues =
-                getChunkValues processor allocationMode matrix.Values
+            let getChunkValues = getChunkValues processor allocationMode matrix.Values
 
-            let getChunkIndices =
-                getChunkIndices processor allocationMode matrix.Columns
+            let getChunkIndices = getChunkIndices processor allocationMode matrix.Columns
 
             let creatSparseVector values columns =
                 { Context = clContext
@@ -350,18 +341,17 @@ module Matrix =
 
             matrix.RowPointers.ToHost processor
             |> Seq.pairwise
-            |> Seq.map
-                (fun (first, second) ->
-                    lazy
-                        (let count = second - first
+            |> Seq.map (fun (first, second) ->
+                lazy
+                    (let count = second - first
 
-                         if count > 0 then
-                             let values = getChunkValues first count
-                             let columns = getChunkIndices first count
+                     if count > 0 then
+                         let values = getChunkValues first count
+                         let columns = getChunkIndices first count
 
-                             Some <| creatSparseVector values columns
-                         else
-                             None))
+                         Some <| creatSparseVector values columns
+                     else
+                         None))
 
     /// <summary>
     /// Represents the given matrix as <c>Seq</c> of optional sparse vectors.
@@ -386,9 +376,7 @@ module Matrix =
         let byRows = byRows clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'a>) ->
-            let rows =
-                byRows processor allocationMode matrix
-                |> Seq.toList
+            let rows = byRows processor allocationMode matrix |> Seq.toList
 
             { Context = clContext
               RowCount = matrix.RowCount
@@ -405,18 +393,16 @@ module Matrix =
 
         let pairwise = ClArray.pairwise clContext workGroupSize
 
-        let subtract =
-            ClArray.map <@ fun (fst, snd) -> snd - fst @> clContext workGroupSize
+        let subtract = ClArray.map <@ fun (fst, snd) -> snd - fst @> clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) allocationMode (matrix: ClMatrix.CSR<'b>) ->
             let pointerPairs =
                 pairwise processor DeviceOnly matrix.RowPointers
                 // since row pointers length in matrix always >= 2
-                |> Option.defaultWith
-                    (fun () -> failwith "The state of the matrix is broken. The length of the rowPointers must be >= 2")
+                |> Option.defaultWith (fun () ->
+                    failwith "The state of the matrix is broken. The length of the rowPointers must be >= 2")
 
-            let rowsLength =
-                subtract processor allocationMode pointerPairs
+            let rowsLength = subtract processor allocationMode pointerPairs
 
             pointerPairs.Free processor
 

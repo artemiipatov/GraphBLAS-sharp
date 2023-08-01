@@ -15,7 +15,7 @@ let processor = Context.defaultContext.Queue
 
 let config = Utils.defaultConfig
 
-let makeTest isZero testFun (array: 'a [,]) =
+let makeTest isZero testFun (array: 'a[,]) =
 
     let matrix = Matrix.CSR.FromArray2D(array, isZero)
 
@@ -27,11 +27,9 @@ let makeTest isZero testFun (array: 'a [,]) =
 
         let actual = clRows.ToHostAndFree processor
 
-        let expected =
-            Matrix.COO.FromArray2D(array, isZero).Rows
+        let expected = Matrix.COO.FromArray2D(array, isZero).Rows
 
-        "Result must be the same"
-        |> Expect.sequenceEqual actual expected
+        "Result must be the same" |> Expect.sequenceEqual actual expected
 
 let createTest (isZero: 'a -> bool) =
     CSR.Matrix.expandRowPointers context Utils.defaultWorkGroupSize

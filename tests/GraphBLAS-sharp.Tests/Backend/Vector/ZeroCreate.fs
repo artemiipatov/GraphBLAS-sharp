@@ -27,6 +27,7 @@ let checkResult size (actual: Vector<'a>) =
         <| vector
     | Vector.Sparse vector ->
         Expect.equal vector.Values [| Unchecked.defaultof<'a> |] "The values array must contain the default value"
+
         Expect.equal vector.Indices [| 0 |] "The index array must contain the 0"
 
 let correctnessGenericTest<'a when 'a: struct and 'a: equality>
@@ -40,8 +41,7 @@ let correctnessGenericTest<'a when 'a: struct and 'a: equality>
     if vectorSize > 0 then
         let q = case.TestContext.Queue
 
-        let clVector =
-            zeroCreate q HostInterop vectorSize case.Format
+        let clVector = zeroCreate q HostInterop vectorSize case.Format
 
         let hostVector = clVector.ToHost q
 
@@ -76,5 +76,4 @@ let testFixtures case =
       createTest<float32> case
       createTest<bool> case ]
 
-let tests =
-    operationGPUTests "Backend.Vector.zeroCreate tests" testFixtures
+let tests = operationGPUTests "Backend.Vector.zeroCreate tests" testFixtures

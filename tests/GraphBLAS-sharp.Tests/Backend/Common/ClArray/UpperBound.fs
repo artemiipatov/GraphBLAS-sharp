@@ -13,9 +13,9 @@ let processor = Context.defaultContext.Queue
 
 let config =
     { Utils.defaultConfig with
-          arbitrary = [ typeof<Generators.UpperBound> ] }
+        arbitrary = [ typeof<Generators.UpperBound> ] }
 
-let makeTest testFun (array: 'a [], value: 'a) =
+let makeTest testFun (array: 'a[], value: 'a) =
 
     if array.Length > 0 then
 
@@ -24,9 +24,7 @@ let makeTest testFun (array: 'a [], value: 'a) =
         let clArray = context.CreateClArray array
         let clValue = context.CreateClCell value
 
-        let actual =
-            (testFun processor clArray clValue: ClCell<_>)
-                .ToHostAndFree processor
+        let actual = (testFun processor clArray clValue: ClCell<_>).ToHostAndFree processor
 
         let expected =
             let mutable expected = 0
@@ -41,8 +39,7 @@ let makeTest testFun (array: 'a [], value: 'a) =
 
             array.Length - expected - 1
 
-        "Results must be the same"
-        |> Expect.equal actual expected
+        "Results must be the same" |> Expect.equal actual expected
 
 let createTest<'a when 'a: equality and 'a: comparison> =
     ClArray.upperBound<'a> context Utils.defaultWorkGroupSize

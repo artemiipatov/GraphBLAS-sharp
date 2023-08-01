@@ -4,17 +4,19 @@ open Brahma.FSharp
 
 module SubReduce =
     let run opAdd =
-        <@ fun length wgSize gid lid (localValues: 'a []) ->
-            let mutable step = 2
+        <@
+            fun length wgSize gid lid (localValues: 'a[]) ->
+                let mutable step = 2
 
-            while step <= wgSize do
-                if (gid + wgSize / step) < length
-                   && lid < wgSize / step then
-                    let firstValue = localValues.[lid]
-                    let secondValue = localValues.[lid + wgSize / step]
+                while step <= wgSize do
+                    if (gid + wgSize / step) < length && lid < wgSize / step then
+                        let firstValue = localValues.[lid]
 
-                    localValues.[lid] <- (%opAdd) firstValue secondValue
+                        let secondValue = localValues.[lid + wgSize / step]
 
-                step <- step <<< 1
+                        localValues.[lid] <- (%opAdd) firstValue secondValue
 
-                barrierLocal () @>
+                    step <- step <<< 1
+
+                    barrierLocal ()
+        @>

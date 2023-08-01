@@ -10,19 +10,20 @@ open GraphBLAS.FSharp.Objects.ClCellExtensions
 module internal Common =
     let setPositions<'a when 'a: struct> (clContext: ClContext) workGroupSize =
 
-        let sum =
-            Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let sum = Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        let valuesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let valuesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let indicesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let indicesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (allValues: ClArray<'a>) (allIndices: ClArray<int>) (positions: ClArray<int>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (allValues: ClArray<'a>)
+            (allIndices: ClArray<int>)
+            (positions: ClArray<int>) ->
 
-            let resultLength =
-                (sum processor positions).ToHostAndFree(processor)
+            let resultLength = (sum processor positions).ToHostAndFree(processor)
 
             let resultValues =
                 clContext.CreateClArrayWithSpecificAllocationMode<'a>(allocationMode, resultLength)
@@ -38,19 +39,20 @@ module internal Common =
 
     let setPositionsOption<'a when 'a: struct> (clContext: ClContext) workGroupSize =
 
-        let sum =
-            Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
+        let sum = Common.PrefixSum.standardExcludeInPlace clContext workGroupSize
 
-        let valuesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let valuesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        let indicesScatter =
-            Common.Scatter.lastOccurrence clContext workGroupSize
+        let indicesScatter = Common.Scatter.lastOccurrence clContext workGroupSize
 
-        fun (processor: MailboxProcessor<_>) allocationMode (allValues: ClArray<'a>) (allIndices: ClArray<int>) (positions: ClArray<int>) ->
+        fun
+            (processor: MailboxProcessor<_>)
+            allocationMode
+            (allValues: ClArray<'a>)
+            (allIndices: ClArray<int>)
+            (positions: ClArray<int>) ->
 
-            let resultLength =
-                (sum processor positions).ToHostAndFree(processor)
+            let resultLength = (sum processor positions).ToHostAndFree(processor)
 
             if resultLength = 0 then
                 None
@@ -73,8 +75,7 @@ module internal Common =
 
         let concatIndices = ClArray.concat clContext workGroupSize
 
-        let mapIndices =
-            ClArray.mapWithValue clContext workGroupSize <@ fun x y -> x + y @>
+        let mapIndices = ClArray.mapWithValue clContext workGroupSize <@ fun x y -> x + y @>
 
         fun (processor: MailboxProcessor<_>) allocationMode (vectors: Sparse<'a> seq) ->
 
@@ -82,19 +83,15 @@ module internal Common =
                 vectors
                 |> Seq.mapFold
                     (fun offset vector ->
-                        let newIndices =
-                            mapIndices processor allocationMode offset vector.Indices
+                        let newIndices = mapIndices processor allocationMode offset vector.Indices
 
                         newIndices, offset + vector.Size)
                     0
 
-            let vectorValues =
-                vectors |> Seq.map (fun vector -> vector.Values)
+            let vectorValues = vectors |> Seq.map (fun vector -> vector.Values)
 
-            let resultIndices =
-                concatIndices processor allocationMode vectorIndices
+            let resultIndices = concatIndices processor allocationMode vectorIndices
 
-            let resultValues =
-                concatValues processor allocationMode vectorValues
+            let resultValues = concatValues processor allocationMode vectorValues
 
             resultIndices, resultValues

@@ -14,24 +14,21 @@ let processor = Context.defaultContext.Queue
 
 let config =
     { Utils.defaultConfig with
-          arbitrary = [ typeof<Generators.BufferCompatibleArray> ] }
+        arbitrary = [ typeof<Generators.BufferCompatibleArray> ] }
 
-let makeTest<'a> isEqual testFun (array: 'a []) =
+let makeTest<'a> isEqual testFun (array: 'a[]) =
     if array.Length > 0 then
 
         let clArray = context.CreateClArray array
 
         match testFun processor HostInterop clArray with
-        | Some (actual: ClArray<_>) ->
+        | Some(actual: ClArray<_>) ->
             let actual = actual.ToHostAndFree processor
 
             let expected = Array.pairwise array
 
-            "First results must be the same"
-            |> Utils.compareArrays isEqual actual expected
-        | None ->
-            "Result must be empty"
-            |> Expect.isTrue (array.Size <= 1)
+            "First results must be the same" |> Utils.compareArrays isEqual actual expected
+        | None -> "Result must be empty" |> Expect.isTrue (array.Size <= 1)
 
 let createTest<'a> isEqual =
     ClArray.pairwise context Utils.defaultWorkGroupSize

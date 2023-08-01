@@ -19,12 +19,11 @@ let wgSize = Utils.defaultWorkGroupSize
 
 let q = defaultContext.Queue
 
-let makeTest<'a when 'a: equality> hostScatter scatter (array: (int * 'a) []) (result: 'a []) =
+let makeTest<'a when 'a: equality> hostScatter scatter (array: (int * 'a)[]) (result: 'a[]) =
     if array.Length > 0 then
         let positions, values = Array.sortBy fst array |> Array.unzip
 
-        let expected =
-            Array.copy result |> hostScatter positions values
+        let expected = Array.copy result |> hostScatter positions values
 
         let actual =
             let clPositions = context.CreateClArray positions
@@ -37,8 +36,7 @@ let makeTest<'a when 'a: equality> hostScatter scatter (array: (int * 'a) []) (r
             clPositions.Free q
             clResult.ToHostAndFree q
 
-        $"Arrays should be equal."
-        |> Utils.compareArrays (=) actual expected
+        $"Arrays should be equal." |> Utils.compareArrays (=) actual expected
 
 let testFixturesLast<'a when 'a: equality> =
     Common.Scatter.lastOccurrence context wgSize
@@ -54,27 +52,22 @@ let tests =
     q.Error.Add(fun e -> failwithf $"%A{e}")
 
     let last =
-        [ testFixturesLast<int>
-          testFixturesLast<byte>
-          testFixturesLast<bool> ]
+        [ testFixturesLast<int>; testFixturesLast<byte>; testFixturesLast<bool> ]
         |> testList "Last Occurrence"
 
     let first =
-        [ testFixturesFirst<int>
-          testFixturesFirst<byte>
-          testFixturesFirst<bool> ]
+        [ testFixturesFirst<int>; testFixturesFirst<byte>; testFixturesFirst<bool> ]
         |> testList "First Occurrence"
 
     testList "ones occurrence" [ first; last ]
 
-let makeTestInit<'a when 'a: equality> hostScatter valueMap scatter (positions: int []) (result: 'a []) =
+let makeTestInit<'a when 'a: equality> hostScatter valueMap scatter (positions: int[]) (result: 'a[]) =
     if positions.Length > 0 then
 
         let values = Array.init positions.Length valueMap
         let positions = Array.sort positions
 
-        let expected =
-            Array.copy result |> hostScatter positions values
+        let expected = Array.copy result |> hostScatter positions values
 
         let clPositions = context.CreateClArray positions
         let clResult = context.CreateClArray result
@@ -84,12 +77,10 @@ let makeTestInit<'a when 'a: equality> hostScatter valueMap scatter (positions: 
         clPositions.Free q
         let actual = clResult.ToHostAndFree q
 
-        $"Arrays should be equal."
-        |> Utils.compareArrays (=) actual expected
+        $"Arrays should be equal." |> Utils.compareArrays (=) actual expected
 
 let createInitTest clScatter hostScatter name valuesMap valuesMapQ =
-    let scatter =
-        clScatter valuesMapQ context Utils.defaultWorkGroupSize
+    let scatter = clScatter valuesMapQ context Utils.defaultWorkGroupSize
 
     makeTestInit<'a> hostScatter valuesMap scatter
     |> testPropertyWithConfig config name

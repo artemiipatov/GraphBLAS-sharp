@@ -20,12 +20,11 @@ let wgSize = Utils.defaultWorkGroupSize
 let getCorrectnessTestName<'a> (case: OperationCase<'a>) dataType =
     $"Correctness on '{dataType} option -> '{dataType} option -> '{dataType} option, {case.Format}"
 
-let checkResult isEqual resultZero (op: 'a -> 'b -> 'c) (actual: Vector<'c>) (leftArray: 'a []) (rightArray: 'b []) =
+let checkResult isEqual resultZero (op: 'a -> 'b -> 'c) (actual: Vector<'c>) (leftArray: 'a[]) (rightArray: 'b[]) =
 
     let expectedArrayLength = leftArray.Length
 
-    let expectedArray =
-        Array.create expectedArrayLength resultZero
+    let expectedArray = Array.create expectedArrayLength resultZero
 
     for i in 0 .. expectedArrayLength - 1 do
         expectedArray.[i] <- op leftArray.[i] rightArray.[i]
@@ -35,9 +34,7 @@ let checkResult isEqual resultZero (op: 'a -> 'b -> 'c) (actual: Vector<'c>) (le
         |> Utils.vectorToDenseVector
 
     match actual with
-    | Vector.Dense actual ->
-        "arrays must have the same values"
-        |> Expect.equal actual expected
+    | Vector.Dense actual -> "arrays must have the same values" |> Expect.equal actual expected
     | _ -> failwith "Vector format must be Sparse."
 
 let correctnessGenericTest
@@ -47,19 +44,16 @@ let correctnessGenericTest
     (addFun: MailboxProcessor<_> -> AllocationFlag -> ClVector<'a> -> ClVector<'a> -> ClVector<'a>)
     (toDense: MailboxProcessor<_> -> AllocationFlag -> ClVector<'a> -> ClVector<'a>)
     case
-    (leftArray: 'a [], rightArray: 'a [])
+    (leftArray: 'a[], rightArray: 'a[])
     =
 
     let isZero = (isEqual zero)
 
-    let firstVectorHost =
-        Utils.createVectorFromArray case.Format leftArray isZero
+    let firstVectorHost = Utils.createVectorFromArray case.Format leftArray isZero
 
-    let secondVectorHost =
-        Utils.createVectorFromArray case.Format rightArray isZero
+    let secondVectorHost = Utils.createVectorFromArray case.Format rightArray isZero
 
-    if firstVectorHost.NNZ > 0
-       && secondVectorHost.NNZ > 0 then
+    if firstVectorHost.NNZ > 0 && secondVectorHost.NNZ > 0 then
 
         let context = case.TestContext.ClContext
         let q = case.TestContext.Queue
@@ -68,8 +62,7 @@ let correctnessGenericTest
         let secondVector = secondVectorHost.ToDevice context
 
         try
-            let res =
-                addFun q HostInterop firstVector secondVector
+            let res = addFun q HostInterop firstVector secondVector
 
             firstVector.Dispose q
             secondVector.Dispose q
@@ -149,8 +142,7 @@ let addAtLeastOneTestFixtures case =
       createTest case (=) false (||) ArithmeticOperations.boolSumAtLeastOne Operations.Vector.map2AtLeastOne
       createTest case (=) 0uy (+) ArithmeticOperations.byteSumAtLeastOne Operations.Vector.map2AtLeastOne ]
 
-let addAtLeastOneTests =
-    operationGPUTests "addAtLeastOne" addTestFixtures
+let addAtLeastOneTests = operationGPUTests "addAtLeastOne" addTestFixtures
 
 let mulAtLeastOneTestFixtures case =
     let context = case.TestContext.ClContext
@@ -176,21 +168,18 @@ let mulAtLeastOneTestFixtures case =
       createTest case (=) false (&&) ArithmeticOperations.boolMulAtLeastOne Operations.Vector.map2AtLeastOne
       createTest case (=) 0uy (*) ArithmeticOperations.byteMulAtLeastOne Operations.Vector.map2AtLeastOne ]
 
-let mulAtLeastOneTests =
-    operationGPUTests "mulAtLeastOne" mulTestFixtures
+let mulAtLeastOneTests = operationGPUTests "mulAtLeastOne" mulTestFixtures
 
 let fillSubVectorComplementedQ<'a, 'b> value =
-    <@ fun (left: 'a option) (right: 'b option) ->
-        match left with
-        | None -> Some value
-        | _ -> right @>
+    <@
+        fun (left: 'a option) (right: 'b option) ->
+            match left with
+            | None -> Some value
+            | _ -> right
+    @>
 
 let fillSubVectorFun value zero isEqual =
-    fun left right ->
-        if isEqual left zero then
-            value
-        else
-            right
+    fun left right -> if isEqual left zero then value else right
 
 let complementedGeneralTestFixtures case =
     let context = case.TestContext.ClContext

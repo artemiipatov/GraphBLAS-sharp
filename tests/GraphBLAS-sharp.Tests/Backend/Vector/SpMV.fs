@@ -17,7 +17,7 @@ let config = Utils.defaultConfig
 
 let wgSize = Utils.defaultWorkGroupSize
 
-let checkResult isEqual sumOp mulOp zero (baseMtx: 'a [,]) (baseVtr: 'a []) (actual: 'a option []) =
+let checkResult isEqual sumOp mulOp zero (baseMtx: 'a[,]) (baseVtr: 'a[]) (actual: 'a option[]) =
     let rows = Array2D.length1 baseMtx
     let columns = Array2D.length2 baseMtx
 
@@ -55,14 +55,12 @@ let correctnessGenericTest
     (isEqual: 'a -> 'a -> bool)
     q
     (testContext: TestContext)
-    (matrix: 'a [,], vector: 'a [], _: bool [])
+    (matrix: 'a[,], vector: 'a[], _: bool[])
     =
 
-    let mtx =
-        Utils.createMatrixFromArray2D CSR matrix (isEqual zero)
+    let mtx = Utils.createMatrixFromArray2D CSR matrix (isEqual zero)
 
-    let vtr =
-        Utils.createVectorFromArray Dense vector (isEqual zero)
+    let vtr = Utils.createVectorFromArray Dense vector (isEqual zero)
 
     if mtx.NNZ > 0 && vtr.Size > 0 then
         try
@@ -104,6 +102,7 @@ let testFixturesSpMV (testContext: TestContext) =
       q.Error.Add(fun e -> failwithf "%A" e)
 
       createTest testContext false (=) (||) (&&) ArithmeticOperations.boolSumOption ArithmeticOperations.boolMulOption
+
       createTest testContext 0 (=) (+) (*) ArithmeticOperations.intSumOption ArithmeticOperations.intMulOption
 
       if Utils.isFloat64Available context.ClDevice then
@@ -127,5 +126,4 @@ let testFixturesSpMV (testContext: TestContext) =
 
       createTest testContext 0uy (=) (+) (*) ArithmeticOperations.byteSumOption ArithmeticOperations.byteMulOption ]
 
-let tests =
-    gpuTests "Backend.Vector.SpMV tests" testFixturesSpMV
+let tests = gpuTests "Backend.Vector.SpMV tests" testFixturesSpMV

@@ -15,20 +15,16 @@ let processor = Context.defaultContext.Queue
 
 let config = Utils.defaultConfig
 
-let checkResult isEqual zero (actual: Matrix.COO<'a>) (leftArray: 'a [,]) (rightArray: 'a [,]) =
+let checkResult isEqual zero (actual: Matrix.COO<'a>) (leftArray: 'a[,]) (rightArray: 'a[,]) =
 
-    let leftMatrix =
-        Matrix.COO.FromArray2D(leftArray, isEqual zero)
+    let leftMatrix = Matrix.COO.FromArray2D(leftArray, isEqual zero)
 
-    let rightMatrix =
-        Matrix.COO.FromArray2D(rightArray, isEqual zero)
+    let rightMatrix = Matrix.COO.FromArray2D(rightArray, isEqual zero)
 
     let expectedRows, expectedColumns, expectedValues =
-        let leftKeys =
-            Seq.zip3 leftMatrix.Rows leftMatrix.Columns leftMatrix.Values
+        let leftKeys = Seq.zip3 leftMatrix.Rows leftMatrix.Columns leftMatrix.Values
 
-        let rightKeys =
-            Seq.zip3 rightMatrix.Rows rightMatrix.Columns rightMatrix.Values
+        let rightKeys = Seq.zip3 rightMatrix.Rows rightMatrix.Columns rightMatrix.Values
 
         // right first
         Seq.concat [ rightKeys; leftKeys ]
@@ -36,8 +32,7 @@ let checkResult isEqual zero (actual: Matrix.COO<'a>) (leftArray: 'a [,]) (right
         |> Seq.toArray
         |> Array.unzip3
 
-    "Rows must be the same"
-    |> Expect.sequenceEqual actual.Rows expectedRows
+    "Rows must be the same" |> Expect.sequenceEqual actual.Rows expectedRows
 
     "Columns must be the same"
     |> Expect.sequenceEqual actual.Columns expectedColumns
@@ -45,13 +40,11 @@ let checkResult isEqual zero (actual: Matrix.COO<'a>) (leftArray: 'a [,]) (right
     "Values must be the same"
     |> Utils.compareArrays isEqual actual.Values expectedValues
 
-let makeTestCOO isEqual zero testFun (leftArray: 'a [,], rightArray: 'a [,]) =
+let makeTestCOO isEqual zero testFun (leftArray: 'a[,], rightArray: 'a[,]) =
 
-    let leftMatrix =
-        Matrix.COO.FromArray2D(leftArray, isEqual zero)
+    let leftMatrix = Matrix.COO.FromArray2D(leftArray, isEqual zero)
 
-    let rightMatrix =
-        Matrix.COO.FromArray2D(rightArray, isEqual zero)
+    let rightMatrix = Matrix.COO.FromArray2D(rightArray, isEqual zero)
 
     if leftMatrix.NNZ > 0 && rightMatrix.NNZ > 0 then
 
@@ -74,12 +67,7 @@ let makeTestCOO isEqual zero testFun (leftArray: 'a [,], rightArray: 'a [,]) =
         let isLeft = clIsLeft.ToHostAndFree processor
 
         let actualValues =
-            Array.map3
-                (fun leftValue rightValue isLeft ->
-                    if isLeft = 1 then
-                        leftValue
-                    else
-                        rightValue)
+            Array.map3 (fun leftValue rightValue isLeft -> if isLeft = 1 then leftValue else rightValue)
             <| leftValues
             <| rightValues
             <| isLeft
@@ -108,12 +96,10 @@ let testsCOO =
       createTestCOO (=) false ]
     |> testList "COO"
 
-let makeTestCSR isEqual zero testFun (leftArray: 'a [,], rightArray: 'a [,]) =
-    let leftMatrix =
-        Matrix.CSR.FromArray2D(leftArray, isEqual zero)
+let makeTestCSR isEqual zero testFun (leftArray: 'a[,], rightArray: 'a[,]) =
+    let leftMatrix = Matrix.CSR.FromArray2D(leftArray, isEqual zero)
 
-    let rightMatrix =
-        Matrix.CSR.FromArray2D(rightArray, isEqual zero)
+    let rightMatrix = Matrix.CSR.FromArray2D(rightArray, isEqual zero)
 
     if leftMatrix.NNZ > 0 && rightMatrix.NNZ > 0 then
 
@@ -138,12 +124,7 @@ let makeTestCSR isEqual zero testFun (leftArray: 'a [,], rightArray: 'a [,]) =
         let isLeft = clIsLeft.ToHostAndFree processor
 
         let actualValues =
-            Array.map3
-                (fun leftValue rightValue isLeft ->
-                    if isLeft = 1 then
-                        leftValue
-                    else
-                        rightValue)
+            Array.map3 (fun leftValue rightValue isLeft -> if isLeft = 1 then leftValue else rightValue)
             <| leftValues
             <| rightValues
             <| isLeft
@@ -172,5 +153,4 @@ let testsCSR =
       createTestCSR (=) false ]
     |> testList "CSR"
 
-let allTests =
-    [ testsCSR; testsCOO ] |> testList "Merge"
+let allTests = [ testsCSR; testsCOO ] |> testList "Merge"

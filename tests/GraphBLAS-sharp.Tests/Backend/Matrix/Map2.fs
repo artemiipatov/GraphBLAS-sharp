@@ -22,7 +22,7 @@ let wgSize = Utils.defaultWorkGroupSize
 let getCorrectTestName case datatype =
     $"Correctness on %s{datatype}, %A{case}"
 
-let checkResult isEqual op zero (baseMtx1: 'a [,]) (baseMtx2: 'a [,]) (actual: Matrix<'a>) =
+let checkResult isEqual op zero (baseMtx1: 'a[,]) (baseMtx2: 'a[,]) (actual: Matrix<'a>) =
     let rows = Array2D.length1 baseMtx1
     let columns = Array2D.length2 baseMtx1
     Expect.equal columns actual.ColumnCount "The number of columns should be the same."
@@ -45,8 +45,7 @@ let checkResult isEqual op zero (baseMtx1: 'a [,]) (baseMtx2: 'a [,]) (actual: M
             actual2D.[actual.Rows.[i], actual.Columns.[i]] <- actual.Values.[i]
     | _ -> failwith "Resulting matrix should be converted to COO format."
 
-    "Arrays must be the same"
-    |> Utils.compare2DArrays isEqual actual2D expected2D
+    "Arrays must be the same" |> Utils.compare2DArrays isEqual actual2D expected2D
 
 let correctnessGenericTest
     zero
@@ -56,16 +55,14 @@ let correctnessGenericTest
     (isEqual: 'a -> 'a -> bool)
     q
     (case: OperationCase<MatrixFormat>)
-    (leftMatrix: 'a [,], rightMatrix: 'a [,])
+    (leftMatrix: 'a[,], rightMatrix: 'a[,])
     =
     match case.Format with // TODO(map2 on LIL)
     | LIL -> ()
     | _ ->
-        let mtx1 =
-            Utils.createMatrixFromArray2D case.Format leftMatrix (isEqual zero)
+        let mtx1 = Utils.createMatrixFromArray2D case.Format leftMatrix (isEqual zero)
 
-        let mtx2 =
-            Utils.createMatrixFromArray2D case.Format rightMatrix (isEqual zero)
+        let mtx2 = Utils.createMatrixFromArray2D case.Format rightMatrix (isEqual zero)
 
         if mtx1.NNZ > 0 && mtx2.NNZ > 0 then
             try
@@ -84,10 +81,7 @@ let correctnessGenericTest
                 cooRes.Dispose q
                 res.Dispose q
 
-                logger.debug (
-                    eventX "Actual is {actual}"
-                    >> setField "actual" (sprintf "%A" actual)
-                )
+                logger.debug (eventX "Actual is {actual}" >> setField "actual" (sprintf "%A" actual))
 
                 checkResult isEqual op zero leftMatrix rightMatrix actual
             with
@@ -120,10 +114,10 @@ let testFixturesMap2Add case =
           createTestMap2Add case 0.0 (+) Utils.floatIsEqual ArithmeticOperations.floatSumOption Operations.Matrix.map2
 
       createTestMap2Add case 0.0f (+) Utils.float32IsEqual ArithmeticOperations.float32SumOption Operations.Matrix.map2
+
       createTestMap2Add case 0uy (+) (=) ArithmeticOperations.byteSumOption Operations.Matrix.map2 ]
 
-let addTests =
-    operationGPUTests "Backend.Matrix.map2 add tests" testFixturesMap2Add
+let addTests = operationGPUTests "Backend.Matrix.map2 add tests" testFixturesMap2Add
 
 let testFixturesMap2AddAtLeastOne case =
     [ let context = case.TestContext.ClContext
@@ -131,6 +125,7 @@ let testFixturesMap2AddAtLeastOne case =
       q.Error.Add(fun e -> failwithf "%A" e)
 
       createTestMap2Add case false (||) (=) ArithmeticOperations.boolSumAtLeastOne Operations.Matrix.map2AtLeastOne
+
       createTestMap2Add case 0 (+) (=) ArithmeticOperations.intSumAtLeastOne Operations.Matrix.map2AtLeastOne
 
       if Utils.isFloat64Available context.ClDevice then
@@ -162,6 +157,7 @@ let testFixturesMap2MulAtLeastOne case =
       q.Error.Add(fun e -> failwithf "%A" e)
 
       createTestMap2Add case false (&&) (=) ArithmeticOperations.boolMulAtLeastOne Operations.Matrix.map2AtLeastOne
+
       createTestMap2Add case 0 (*) (=) ArithmeticOperations.intMulAtLeastOne Operations.Matrix.map2AtLeastOne
 
       if Utils.isFloat64Available context.ClDevice then
@@ -186,9 +182,4 @@ let testFixturesMap2MulAtLeastOne case =
 let mulAtLeastOneTests =
     operationGPUTests "Backend.Matrix.map2AtLeastOne multiplication tests" testFixturesMap2MulAtLeastOne
 
-let allTests =
-    testList
-        "Map2"
-        [ addTests
-          addAtLeastOneTests
-          mulAtLeastOneTests ]
+let allTests = testList "Map2" [ addTests; addAtLeastOneTests; mulAtLeastOneTests ]

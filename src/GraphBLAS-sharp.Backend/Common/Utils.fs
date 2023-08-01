@@ -29,5 +29,4 @@ module internal Utils =
     //Option type in C is represented as structure with additional integer field
     let getClArrayOfOptionTypeSize<'a> localMemorySize =
         localMemorySize
-        / (sizeof<int> + sizeof<'a>
-           |> ceilToMultiple (max sizeof<'a> sizeof<int>))
+        / (sizeof<int> + sizeof<'a> |> ceilToMultiple (max sizeof<'a> sizeof<int>))

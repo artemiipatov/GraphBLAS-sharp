@@ -20,13 +20,10 @@ let config = Utils.defaultConfig
 let wgSize = 128
 let q = defaultContext.Queue
 
-let makeTest plus zero sum (array: 'a []) =
+let makeTest plus zero sum (array: 'a[]) =
     if array.Length > 0 then
 
-        logger.debug (
-            eventX "Filtered array is {array}\n"
-            >> setField "array" (sprintf "%A" array)
-        )
+        logger.debug (eventX "Filtered array is {array}\n" >> setField "array" (sprintf "%A" array))
 
         let actualSum =
             let clArray = context.CreateClArray array
@@ -35,10 +32,7 @@ let makeTest plus zero sum (array: 'a []) =
             clArray.Free q
             total.ToHostAndFree q
 
-        logger.debug (
-            eventX "Actual is {actual}\n"
-            >> setField "actual" (sprintf "%A" actualSum)
-        )
+        logger.debug (eventX "Actual is {actual}\n" >> setField "actual" (sprintf "%A" actualSum))
 
         let expectedSum = array |> Array.fold plus zero
 
@@ -47,8 +41,7 @@ let makeTest plus zero sum (array: 'a []) =
             >> setField "expected" (sprintf "%A" expectedSum)
         )
 
-        "Total sums should be equal"
-        |> Expect.equal actualSum expectedSum
+        "Total sums should be equal" |> Expect.equal actualSum expectedSum
 
 let testFixtures plus (plusQ: Expr<'a -> 'a -> 'a>) zero name =
     Common.Reduce.sum plusQ zero context wgSize

@@ -10,10 +10,6 @@ GraphBLAS-sharp is a library that does this specific thing.
 
 I created it because I had to solve an issue with this other thing.
 
-## Benchmark results
-
-[Results]({{siteBaseUrl}}/benchmarks/index.html)
-
 ---
 
 <div class="row row-cols-1 row-cols-md-2">
@@ -24,7 +20,7 @@ I created it because I had to solve an issue with this other thing.
         <p class="card-text">Takes you by the hand through a series of steps to create your first thing. </p>
       </div>
       <div class="card-footer text-right   border-top-0">
-        <a href="{{siteBaseUrl}}/Tutorials/Getting_Started.html" class="btn btn-primary">Get started</a>
+        <a href="{{root}}Tutorials/Getting_Started.html" class="btn btn-primary">Get started</a>
       </div>
     </div>
   </div>
@@ -35,7 +31,7 @@ I created it because I had to solve an issue with this other thing.
         <p class="card-text">Guides you through the steps involved in addressing key problems and use-cases. </p>
       </div>
       <div class="card-footer text-right   border-top-0">
-        <a href="{{siteBaseUrl}}/How_Tos/Doing_A_Thing.html" class="btn btn-primary">Learn Usecases</a>
+        <a href="{{root}}How_Tos/Doing_A_Thing.html" class="btn btn-primary">Learn Usecases</a>
       </div>
     </div>
   </div>
@@ -46,7 +42,7 @@ I created it because I had to solve an issue with this other thing.
         <p class="card-text">Discusses key topics and concepts at a fairly high level and provide useful background information and explanation..</p>
       </div>
       <div class="card-footer text-right   border-top-0">
-        <a href="{{siteBaseUrl}}/Explanations/Background.html" class="btn btn-primary">Dive Deeper</a>
+        <a href="{{root}}Explanations/Background.html" class="btn btn-primary">Dive Deeper</a>
       </div>
     </div>
   </div>
@@ -57,7 +53,7 @@ I created it because I had to solve an issue with this other thing.
         <p class="card-text">Contain technical reference for APIs.</p>
       </div>
       <div class="card-footer text-right   border-top-0">
-        <a href="{{siteBaseUrl}}/Api_Reference/GraphBLAS-sharp/GraphBLAS-sharp.html" class="btn btn-primary">Read Api Docs</a>
+        <a href="{{root}}reference/index.html" class="btn btn-primary">Read Api Docs</a>
       </div>
     </div>
   </div>

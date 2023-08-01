@@ -15,28 +15,26 @@ module Utils =
 
     let defaultConfig =
         { FsCheckConfig.defaultConfig with
-              maxTest = 10
-              startSize = 1
-              endSize = 50
-              arbitrary =
-                  [ typeof<Generators.SingleMatrix>
-                    typeof<Generators.PairOfSparseMatricesOfEqualSize>
-                    typeof<Generators.PairOfMatricesOfCompatibleSize>
-                    typeof<Generators.PairOfSparseMatrixAndVectorsCompatibleSize>
-                    typeof<Generators.PairOfSparseVectorAndMatrixAndMaskOfCompatibleSize>
-                    typeof<Generators.ArrayOfDistinctKeys2D>
-                    typeof<Generators.ArrayOfAscendingKeys>
-                    typeof<Generators.BufferCompatibleArray>
-                    typeof<Generators.PairOfVectorsOfEqualSize>
-                    typeof<Generators.PairOfArraysAndValue> ] }
+            maxTest = 10
+            startSize = 1
+            endSize = 50
+            arbitrary =
+                [ typeof<Generators.SingleMatrix>
+                  typeof<Generators.PairOfSparseMatricesOfEqualSize>
+                  typeof<Generators.PairOfMatricesOfCompatibleSize>
+                  typeof<Generators.PairOfSparseMatrixAndVectorsCompatibleSize>
+                  typeof<Generators.PairOfSparseVectorAndMatrixAndMaskOfCompatibleSize>
+                  typeof<Generators.ArrayOfDistinctKeys2D>
+                  typeof<Generators.ArrayOfAscendingKeys>
+                  typeof<Generators.BufferCompatibleArray>
+                  typeof<Generators.PairOfVectorsOfEqualSize>
+                  typeof<Generators.PairOfArraysAndValue> ] }
 
     let floatIsEqual x y =
-        abs (x - y) < Accuracy.medium.absolute
-        || x.Equals y
+        abs (x - y) < Accuracy.medium.absolute || x.Equals y
 
     let inline float32IsEqual x y =
-        float (abs (x - y)) < Accuracy.medium.absolute
-        || x.Equals y
+        float (abs (x - y)) < Accuracy.medium.absolute || x.Equals y
 
     let vectorToDenseVector =
         function
@@ -45,34 +43,22 @@ module Utils =
 
     let undirectedAlgoConfig =
         { FsCheckConfig.defaultConfig with
-              maxTest = 10
-              startSize = 1
-              endSize = 1000
-              arbitrary = [ typeof<Generators.SingleSymmetricalMatrix> ] }
+            maxTest = 10
+            startSize = 1
+            endSize = 1000
+            arbitrary = [ typeof<Generators.SingleSymmetricalMatrix> ] }
 
     let createMatrixFromArray2D matrixCase array isZero =
         match matrixCase with
-        | CSR ->
-            Matrix.CSR
-            <| Matrix.CSR.FromArray2D(array, isZero)
-        | COO ->
-            Matrix.COO
-            <| Matrix.COO.FromArray2D(array, isZero)
-        | CSC ->
-            Matrix.CSC
-            <| Matrix.CSC.FromArray2D(array, isZero)
-        | LIL ->
-            Matrix.LIL
-            <| Matrix.LIL.FromArray2D(array, isZero)
+        | CSR -> Matrix.CSR <| Matrix.CSR.FromArray2D(array, isZero)
+        | COO -> Matrix.COO <| Matrix.COO.FromArray2D(array, isZero)
+        | CSC -> Matrix.CSC <| Matrix.CSC.FromArray2D(array, isZero)
+        | LIL -> Matrix.LIL <| Matrix.LIL.FromArray2D(array, isZero)
 
     let createVectorFromArray vectorCase array isZero =
         match vectorCase with
-        | VectorFormat.Sparse ->
-            Vector.Sparse
-            <| Vector.Sparse.FromArray(array, isZero)
-        | VectorFormat.Dense ->
-            Vector.Dense
-            <| ArraysExtensions.DenseVectorFromArray(array, isZero)
+        | VectorFormat.Sparse -> Vector.Sparse <| Vector.Sparse.FromArray(array, isZero)
+        | VectorFormat.Dense -> Vector.Dense <| ArraysExtensions.DenseVectorFromArray(array, isZero)
 
     let createArrayFromDictionary size zero (dictionary: System.Collections.Generic.Dictionary<int, 'a>) =
         let array = Array.create size zero
@@ -90,7 +76,7 @@ module Utils =
                 | None -> zero)
             array
 
-    let compareArrays areEqual (actual: 'a []) (expected: 'a []) message =
+    let compareArrays areEqual (actual: 'a[]) (expected: 'a[]) message =
         $"%s{message}. Lengths should be equal. Actual is %A{actual}, expected %A{expected}"
         |> Expect.equal actual.Length expected.Length
 
@@ -100,14 +86,14 @@ module Utils =
                 Actual value is %A{actual.[i]}, expected %A{expected.[i]}, \n actual: %A{actual} \n expected: %A{expected}"
                 |> failtestf "%s"
 
-    let compareChunksArrays areEqual (actual: 'a [] []) (expected: 'a [] []) message =
+    let compareChunksArrays areEqual (actual: 'a[][]) (expected: 'a[][]) message =
         $"%s{message}. Lengths should be equal. Actual is %A{actual}, expected %A{expected}"
         |> Expect.equal actual.Length expected.Length
 
         for i in 0 .. actual.Length - 1 do
             compareArrays areEqual actual.[i] expected.[i] message
 
-    let compare2DArrays areEqual (actual: 'a [,]) (expected: 'a [,]) message =
+    let compare2DArrays areEqual (actual: 'a[,]) (expected: 'a[,]) message =
         $"%s{message}. Lengths should be equal. Actual is %A{actual}, expected %A{expected}"
         |> Expect.equal actual.Length expected.Length
 
@@ -119,28 +105,23 @@ module Utils =
                     |> failtestf "%s"
 
     let compareSparseVectors isEqual (actual: Vector.Sparse<'a>) (expected: Vector.Sparse<'a>) =
-        "Sparse vector size must be the same"
-        |> Expect.equal actual.Size expected.Size
+        "Sparse vector size must be the same" |> Expect.equal actual.Size expected.Size
 
-        "Value must be the same"
-        |> compareArrays isEqual actual.Values expected.Values
+        "Value must be the same" |> compareArrays isEqual actual.Values expected.Values
 
-        "Indices must be the same"
-        |> compareArrays (=) actual.Indices expected.Indices
+        "Indices must be the same" |> compareArrays (=) actual.Indices expected.Indices
 
     let compareLILMatrix isEqual (actual: Matrix.LIL<'a>) (expected: Matrix.LIL<'a>) =
         "Column count must be the same"
         |> Expect.equal actual.ColumnCount expected.ColumnCount
 
-        "Rows count must be the same"
-        |> Expect.equal actual.RowCount expected.RowCount
+        "Rows count must be the same" |> Expect.equal actual.RowCount expected.RowCount
 
-        List.iter2
-            (fun actualRow expected ->
-                match actualRow, expected with
-                | Some actualVector, Some expectedVector -> compareSparseVectors isEqual actualVector expectedVector
-                | None, None -> ()
-                | _ -> failwith "Rows are not matching")
+        List.iter2 (fun actualRow expected ->
+            match actualRow, expected with
+            | Some actualVector, Some expectedVector -> compareSparseVectors isEqual actualVector expectedVector
+            | None, None -> ()
+            | _ -> failwith "Rows are not matching")
         <| actual.Rows
         <| expected.Rows
 
@@ -148,33 +129,27 @@ module Utils =
         "Column count must be the same"
         |> Expect.equal actual.ColumnCount expected.ColumnCount
 
-        "Rows count must be the same"
-        |> Expect.equal actual.RowCount expected.RowCount
+        "Rows count must be the same" |> Expect.equal actual.RowCount expected.RowCount
 
-        "Values must be the same"
-        |> compareArrays isEqual actual.Values expected.Values
+        "Values must be the same" |> compareArrays isEqual actual.Values expected.Values
 
         "Column indices must be the same"
         |> compareArrays (=) actual.ColumnIndices expected.ColumnIndices
 
-        "Row pointers"
-        |> compareArrays (=) actual.RowPointers expected.RowPointers
+        "Row pointers" |> compareArrays (=) actual.RowPointers expected.RowPointers
 
     let compareCOOMatrix isEqual (actual: Matrix.COO<'a>) (expected: Matrix.COO<'a>) =
         "Column count must be the same"
         |> Expect.equal actual.ColumnCount expected.ColumnCount
 
-        "Rows count must be the same"
-        |> Expect.equal actual.RowCount expected.RowCount
+        "Rows count must be the same" |> Expect.equal actual.RowCount expected.RowCount
 
-        "Values must be the same"
-        |> compareArrays isEqual actual.Values expected.Values
+        "Values must be the same" |> compareArrays isEqual actual.Values expected.Values
 
         "Column indices must be the same"
         |> compareArrays (=) actual.Columns expected.Columns
 
-        "Row pointers"
-        |> compareArrays (=) actual.Rows expected.Rows
+        "Row pointers" |> compareArrays (=) actual.Rows expected.Rows
 
     let listOfUnionCases<'a> =
         FSharpType.GetUnionCases typeof<'a>
@@ -186,9 +161,7 @@ module Utils =
         | [ x ] -> List.fold (fun acc elem -> [ elem ] :: acc) [] x
         | h :: t ->
             List.fold
-                (fun cacc celem ->
-                    (List.fold (fun acc elem -> (elem :: celem) :: acc) [] h)
-                    @ cacc)
+                (fun cacc celem -> (List.fold (fun acc elem -> (elem :: celem) :: acc) [] h) @ cacc)
                 []
                 (cartesian t)
         | _ -> []
@@ -197,8 +170,7 @@ module Utils =
         Array.contains CL_KHR_FP64 context.DeviceExtensions
 
     let transpose2DArray array =
-        let result =
-            Array2D.zeroCreate (Array2D.length2 array) (Array2D.length1 array)
+        let result = Array2D.zeroCreate (Array2D.length2 array) (Array2D.length1 array)
 
         for i in 0 .. Array2D.length1 result - 1 do
             for j in 0 .. Array2D.length2 result - 1 do
@@ -208,8 +180,7 @@ module Utils =
 
 module HostPrimitives =
     let prefixSumInclude zero add array =
-        Array.scan add zero array
-        |> fun scanned -> scanned.[1..], Array.last scanned
+        Array.scan add zero array |> fun scanned -> scanned.[1..], Array.last scanned
 
     let prefixSumExclude zero add sourceArray =
         prefixSumInclude zero add sourceArray
@@ -219,16 +190,13 @@ module HostPrimitives =
     let getUniqueBitmapLastOccurrence array =
         Array.pairwise array
         |> fun pairs ->
-            Array.init
-                array.Length
-                (fun index ->
-                    if index = array.Length - 1
-                       || fst pairs.[index] <> snd pairs.[index] then
-                        1
-                    else
-                        0)
+            Array.init array.Length (fun index ->
+                if index = array.Length - 1 || fst pairs.[index] <> snd pairs.[index] then
+                    1
+                else
+                    0)
 
-    let getUniqueBitmapFirstOccurrence (sourceArray: _ []) =
+    let getUniqueBitmapFirstOccurrence (sourceArray: _[]) =
         let resultArray = Array.zeroCreate sourceArray.Length
 
         for i in 0 .. sourceArray.Length - 1 do
@@ -245,11 +213,7 @@ module HostPrimitives =
     let reduceByKey keys value reduceOp =
         Array.zip keys value
         |> Array.groupBy fst
-        |> Array.map
-            (fun (key, array) ->
-                Array.map snd array
-                |> Array.reduce reduceOp
-                |> fun value -> key, value)
+        |> Array.map (fun (key, array) -> Array.map snd array |> Array.reduce reduceOp |> (fun value -> key, value))
         |> Array.unzip
 
     let reduceByKey2D firstKeys secondKeys values reduceOp =
@@ -280,7 +244,7 @@ module HostPrimitives =
     let scatterFirstOccurrence positions =
         generalScatter getUniqueBitmapFirstOccurrence positions
 
-    let gather (positions: int []) (values: 'a []) (result: 'a []) =
+    let gather (positions: int[]) (values: 'a[]) (result: 'a[]) =
         if positions.Length <> result.Length then
             failwith "Lengths must be the same"
 
@@ -293,8 +257,7 @@ module HostPrimitives =
         result
 
     let array2DMultiplication zero mul add leftArray rightArray =
-        if Array2D.length2 leftArray
-           <> Array2D.length1 rightArray then
+        if Array2D.length2 leftArray <> Array2D.length1 rightArray then
             failwith "Incompatible matrices"
 
         let add left right =
@@ -324,10 +287,8 @@ module HostPrimitives =
 
     let array2DKroneckerProduct leftMatrix rightMatrix op =
         Array2D.init
-        <| (Array2D.length1 leftMatrix)
-           * (Array2D.length1 rightMatrix)
-        <| (Array2D.length2 leftMatrix)
-           * (Array2D.length2 rightMatrix)
+        <| (Array2D.length1 leftMatrix) * (Array2D.length1 rightMatrix)
+        <| (Array2D.length2 leftMatrix) * (Array2D.length2 rightMatrix)
         <| fun i j ->
             let leftElement =
                 leftMatrix.[i / (Array2D.length1 rightMatrix), j / (Array2D.length2 rightMatrix)]
@@ -348,87 +309,57 @@ module Context =
         Cl.GetPlatformIDs &e
         |> Array.collect (fun platform -> Cl.GetDeviceIDs(platform, DeviceType.All, &e))
         |> Seq.ofArray
-        |> Seq.distinctBy
-            (fun device ->
-                Cl
-                    .GetDeviceInfo(device, DeviceInfo.Name, &e)
-                    .ToString())
-        |> Seq.filter
-            (fun device ->
-                let isAvailable =
-                    Cl
-                        .GetDeviceInfo(device, DeviceInfo.Available, &e)
-                        .CastTo<bool>()
+        |> Seq.distinctBy (fun device -> Cl.GetDeviceInfo(device, DeviceInfo.Name, &e).ToString())
+        |> Seq.filter (fun device ->
+            let isAvailable = Cl.GetDeviceInfo(device, DeviceInfo.Available, &e).CastTo<bool>()
 
-                let platform =
-                    Cl
-                        .GetDeviceInfo(device, DeviceInfo.Platform, &e)
-                        .CastTo<Platform>()
+            let platform = Cl.GetDeviceInfo(device, DeviceInfo.Platform, &e).CastTo<Platform>()
 
-                let platformName =
-                    Cl
-                        .GetPlatformInfo(platform, PlatformInfo.Name, &e)
-                        .ToString()
+            let platformName = Cl.GetPlatformInfo(platform, PlatformInfo.Name, &e).ToString()
 
-                (Regex platformRegex).IsMatch platformName
-                && isAvailable)
-        |> Seq.map
-            (fun device ->
-                let platform =
-                    Cl
-                        .GetDeviceInfo(device, DeviceInfo.Platform, &e)
-                        .CastTo<Platform>()
+            (Regex platformRegex).IsMatch platformName && isAvailable)
+        |> Seq.map (fun device ->
+            let platform = Cl.GetDeviceInfo(device, DeviceInfo.Platform, &e).CastTo<Platform>()
 
-                let clPlatform =
-                    Cl
-                        .GetPlatformInfo(platform, PlatformInfo.Name, &e)
-                        .ToString()
-                    |> Platform.Custom
+            let clPlatform =
+                Cl.GetPlatformInfo(platform, PlatformInfo.Name, &e).ToString()
+                |> Platform.Custom
 
-                let deviceType =
-                    Cl
-                        .GetDeviceInfo(device, DeviceInfo.Type, &e)
-                        .CastTo<DeviceType>()
+            let deviceType = Cl.GetDeviceInfo(device, DeviceInfo.Type, &e).CastTo<DeviceType>()
 
-                let _ =
-                    match deviceType with
-                    | DeviceType.Cpu -> ClDeviceType.Cpu
-                    | DeviceType.Gpu -> ClDeviceType.Gpu
-                    | DeviceType.Default -> ClDeviceType.Default
-                    | _ -> failwith "Unsupported"
+            let _ =
+                match deviceType with
+                | DeviceType.Cpu -> ClDeviceType.Cpu
+                | DeviceType.Gpu -> ClDeviceType.Gpu
+                | DeviceType.Default -> ClDeviceType.Default
+                | _ -> failwith "Unsupported"
 
-                let device =
-                    ClDevice.GetFirstAppropriateDevice(clPlatform)
+            let device = ClDevice.GetFirstAppropriateDevice(clPlatform)
 
-                let translator = FSQuotationToOpenCLTranslator device
+            let translator = FSQuotationToOpenCLTranslator device
 
-                let context = ClContext(device, translator)
-                let queue = context.QueueProvider.CreateQueue()
+            let context = ClContext(device, translator)
+            let queue = context.QueueProvider.CreateQueue()
 
-                { ClContext = context; Queue = queue })
+            { ClContext = context; Queue = queue })
 
     let defaultContext =
         let device = ClDevice.GetFirstAppropriateDevice()
 
-        let context =
-            ClContext(device, FSQuotationToOpenCLTranslator device)
+        let context = ClContext(device, FSQuotationToOpenCLTranslator device)
 
         let queue = context.QueueProvider.CreateQueue()
 
         { ClContext = context; Queue = queue }
 
     let gpuOnlyContextFilter =
-        Seq.filter
-            (fun (context: TestContext) ->
-                let mutable e = ErrorCode.Unknown
-                let device = context.ClContext.ClDevice.Device
+        Seq.filter (fun (context: TestContext) ->
+            let mutable e = ErrorCode.Unknown
+            let device = context.ClContext.ClDevice.Device
 
-                let deviceType =
-                    Cl
-                        .GetDeviceInfo(device, DeviceInfo.Type, &e)
-                        .CastTo<DeviceType>()
+            let deviceType = Cl.GetDeviceInfo(device, DeviceInfo.Type, &e).CastTo<DeviceType>()
 
-                deviceType = DeviceType.Gpu)
+            deviceType = DeviceType.Gpu)
 
 module TestCases =
 
@@ -439,23 +370,16 @@ module TestCases =
     let defaultPlatformRegex = ""
 
     let testCases contextFilter =
-        Context.availableContexts defaultPlatformRegex
-        |> contextFilter
-        |> List.ofSeq
+        Context.availableContexts defaultPlatformRegex |> contextFilter |> List.ofSeq
 
     let getTestCases<'a> contextFilter =
         Context.availableContexts defaultPlatformRegex
         |> contextFilter
         |> List.ofSeq
-        |> List.collect
-            (fun x ->
-                Utils.listOfUnionCases<'a>
-                |> List.ofSeq
-                |> List.map (fun y -> x, y))
-        |> List.map
-            (fun pair ->
-                { TestContext = fst pair
-                  Format = snd pair })
+        |> List.collect (fun x -> Utils.listOfUnionCases<'a> |> List.ofSeq |> List.map (fun y -> x, y))
+        |> List.map (fun pair ->
+            { TestContext = fst pair
+              Format = snd pair })
 
     let operationGPUTests name (testFixtures: OperationCase<'a> -> Test list) =
         getTestCases<'a> Context.gpuOnlyContextFilter

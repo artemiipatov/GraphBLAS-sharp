@@ -3,4 +3,4 @@
 open Brahma.FSharp
 
 type IDeviceMemObject =
-    abstract Dispose : MailboxProcessor<Msg> -> unit
+    abstract Dispose: MailboxProcessor<Msg> -> unit

@@ -13,7 +13,7 @@ let workGroupSize = Utils.defaultWorkGroupSize
 
 let config = Utils.defaultConfig
 
-let makeTest<'a, 'b> testContext mapFun isEqual choose (array: 'a []) =
+let makeTest<'a, 'b> testContext mapFun isEqual choose (array: 'a[]) =
     let context = testContext.ClContext
     let q = testContext.Queue
 
@@ -31,9 +31,7 @@ let makeTest<'a, 'b> testContext mapFun isEqual choose (array: 'a []) =
 
             "Result should be the same"
             |> Utils.compareArrays isEqual hostResult expectedResult
-        | None ->
-            "Result must be empty"
-            |> Expect.isTrue (expectedResult.Length = 0)
+        | None -> "Result must be empty" |> Expect.isTrue (expectedResult.Length = 0)
 
 let createTest<'a, 'b> testContext mapFun mapFunQ isEqual =
     ClArray.choose mapFunQ testContext.ClContext workGroupSize
@@ -52,18 +50,15 @@ let testFixtures testContext =
 
       createTest<float32 option, float32> testContext id Map.id Utils.float32IsEqual ]
 
-let tests =
-    TestCases.gpuTests "choose id" testFixtures
+let tests = TestCases.gpuTests "choose id" testFixtures
 
-let makeTest2 testContext isEqual opMap testFun (firstArray: 'a [], secondArray: 'a []) =
+let makeTest2 testContext isEqual opMap testFun (firstArray: 'a[], secondArray: 'a[]) =
     let context = testContext.ClContext
     let processor = testContext.Queue
 
     if firstArray.Length > 0 && secondArray.Length > 0 then
 
-        let expected =
-            Array.map2 opMap firstArray secondArray
-            |> Array.choose id
+        let expected = Array.map2 opMap firstArray secondArray |> Array.choose id
 
         if expected.Length > 0 then
             let clFirstArray = context.CreateClArray firstArray
@@ -76,8 +71,7 @@ let makeTest2 testContext isEqual opMap testFun (firstArray: 'a [], secondArray:
             clFirstArray.Free processor
             clSecondArray.Free processor
 
-            "Results must be the same"
-            |> Utils.compareArrays isEqual actual expected
+            "Results must be the same" |> Utils.compareArrays isEqual actual expected
 
 let createTest2 testsContext (isEqual: 'a -> 'a -> bool) (opMapQ, opMap) testFun =
     testFun opMapQ testsContext.ClContext Utils.defaultWorkGroupSize
@@ -95,7 +89,6 @@ let testsFixtures2 testContext =
       createTest2 testContext (=) ArithmeticOperations.float32Add ClArray.choose2
       createTest2 testContext (=) ArithmeticOperations.boolAdd ClArray.choose2 ]
 
-let tests2 =
-    TestCases.gpuTests "choose2 add" testsFixtures2
+let tests2 = TestCases.gpuTests "choose2 add" testsFixtures2
 
 let allTests = testList "Choose" [ tests; tests2 ]

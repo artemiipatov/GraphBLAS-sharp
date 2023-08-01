@@ -21,17 +21,15 @@ let wgSize = Utils.defaultWorkGroupSize
 let getCorrectnessTestName case datatype =
     $"Correctness on %s{datatype}, vector: %A{case.Format}"
 
-let checkResult isZero isComplemented (actual: Vector<'a>) (vector: 'a []) (mask: 'a []) (value: 'a) =
+let checkResult isZero isComplemented (actual: Vector<'a>) (vector: 'a[]) (mask: 'a[]) (value: 'a) =
 
     let expectedArray = Array.zeroCreate vector.Length
 
     let vector =
-        Utils.createVectorFromArray Dense vector isZero
-        |> Utils.vectorToDenseVector
+        Utils.createVectorFromArray Dense vector isZero |> Utils.vectorToDenseVector
 
     let mask =
-        Utils.createVectorFromArray Dense mask isZero
-        |> Utils.vectorToDenseVector
+        Utils.createVectorFromArray Dense mask isZero |> Utils.vectorToDenseVector
 
     for i in 0 .. vector.Length - 1 do
         expectedArray.[i] <-
@@ -54,14 +52,12 @@ let makeTest<'a when 'a: struct and 'a: equality>
     (fillVector: MailboxProcessor<Msg> -> AllocationFlag -> ClVector<'a> -> ClVector<'a> -> ClCell<'a> -> ClVector<'a>)
     isComplemented
     case
-    (vector: 'a [], mask: 'a [], value: 'a)
+    (vector: 'a[], mask: 'a[], value: 'a)
     =
 
-    let leftVector =
-        Utils.createVectorFromArray case.Format vector isZero
+    let leftVector = Utils.createVectorFromArray case.Format vector isZero
 
-    let maskVector =
-        Utils.createVectorFromArray case.Format mask isZero
+    let maskVector = Utils.createVectorFromArray case.Format mask isZero
 
     if leftVector.NNZ > 0 && maskVector.NNZ > 0 then
 
@@ -74,8 +70,7 @@ let makeTest<'a when 'a: struct and 'a: equality>
         try
             let clValue = context.CreateClCell<'a> value
 
-            let clActual =
-                fillVector q HostInterop clLeftVector clMaskVector clValue
+            let clActual = fillVector q HostInterop clLeftVector clMaskVector clValue
 
             let cooClActual = toDense q HostInterop clActual
 
@@ -117,9 +112,7 @@ let testFixtures case =
       createTest case ((=) 0uy) isComplemented Vector.assignByMask
       createTest case ((=) false) isComplemented Vector.assignByMask ]
 
-let tests =
-    operationGPUTests "Backend.Vector.assignByMask tests"
-    <| testFixtures
+let tests = operationGPUTests "Backend.Vector.assignByMask tests" <| testFixtures
 
 let testFixturesComplemented case =
     let context = case.TestContext.ClContext

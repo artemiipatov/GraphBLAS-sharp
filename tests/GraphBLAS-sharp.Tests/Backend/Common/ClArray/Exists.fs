@@ -10,8 +10,7 @@ open GraphBLAS.FSharp.Objects
 open GraphBLAS.FSharp.Objects.ClCellExtensions
 open GraphBLAS.FSharp.Backend.Quotes
 
-let logger =
-    Log.create "ClArray.containsNonZero.Tests"
+let logger = Log.create "ClArray.containsNonZero.Tests"
 
 let context = defaultContext.ClContext
 
@@ -21,11 +20,10 @@ let config = Utils.defaultConfig
 
 let wgSize = Utils.defaultWorkGroupSize
 
-let correctnessGenericTest<'a when 'a: struct and 'a: equality> isZero exists (array: 'a []) =
+let correctnessGenericTest<'a when 'a: struct and 'a: equality> isZero exists (array: 'a[]) =
 
     if array.Length > 0 then
-        let vector =
-            Utils.createVectorFromArray Dense array isZero
+        let vector = Utils.createVectorFromArray Dense array isZero
 
         let result =
             match vector.ToDevice context with
@@ -36,8 +34,7 @@ let correctnessGenericTest<'a when 'a: struct and 'a: equality> isZero exists (a
         |> Expect.equal result (Array.exists (not << isZero) array)
 
 let createTest<'a when 'a: struct and 'a: equality> isEqual zero =
-    let exists =
-        ClArray.exists Predicates.isSome context wgSize
+    let exists = ClArray.exists Predicates.isSome context wgSize
 
     [ correctnessGenericTest<'a> (isEqual zero) exists
       |> testPropertyWithConfig config "FSCheck data"
@@ -56,5 +53,4 @@ let testFixtures =
       createTest<float32> Utils.float32IsEqual 0.0f
       createTest<bool> (=) false ]
 
-let tests =
-    testList "Common.ClArray.exists tests" testFixtures
+let tests = testList "Common.ClArray.exists tests" testFixtures

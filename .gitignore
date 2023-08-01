@@ -278,3 +278,9 @@ benchmarks/GraphBLAS-sharp.Benchmarks/Datasets
 dmp_tmp/GraphBLAS-sharp/
 
 dmp_tmp/
+
+# fsdocs generated
+tmp/
+temp/
+.fsdocs
+docs/

@@ -11,33 +11,30 @@ module BFS =
         let mutable currentDistance = 1
         let mutable currentVertex = 0
 
-        let bfs =
-            UndirectedBreadthFirstSearchAlgorithm(graph)
+        let bfs = UndirectedBreadthFirstSearchAlgorithm(graph)
 
-        bfs.add_DiscoverVertex
-            (fun x ->
-                if x = source then
-                    currentVertex <- source)
+        bfs.add_DiscoverVertex (fun x ->
+            if x = source then
+                currentVertex <- source)
 
-        bfs.add_ExamineVertex
-            (fun x ->
-                currentVertex <- x
+        bfs.add_ExamineVertex (fun x ->
+            currentVertex <- x
 
-                if distances.[x] = currentDistance + 1 then
-                    currentDistance <- currentDistance + 1)
+            if distances.[x] = currentDistance + 1 then
+                currentDistance <- currentDistance + 1)
 
-        bfs.add_TreeEdge
-            (fun sender x ->
-                let mutable source = x.Source
-                let mutable target = x.Target
+        bfs.add_TreeEdge (fun sender x ->
+            let mutable source = x.Source
+            let mutable target = x.Target
 
-                if bfs.VerticesColors.[target] = GraphColor.Gray then
-                    let temp = source
-                    source <- target
-                    target <- temp
+            if bfs.VerticesColors.[target] = GraphColor.Gray then
+                let temp = source
+                source <- target
+                target <- temp
 
-                parents.[x.Target] <- x.Source
-                distances.[x.Target] <- distances.[x.Source] + 1)
+            parents.[x.Target] <- x.Source
+
+            distances.[x.Target] <- distances.[x.Source] + 1)
 
         distances.[source] <- currentDistance
 
@@ -52,22 +49,20 @@ module BFS =
         let mutable currentVertex = 0
         let bfs = BreadthFirstSearchAlgorithm(graph)
 
-        bfs.add_DiscoverVertex
-            (fun x ->
-                if x = source then
-                    currentVertex <- source)
+        bfs.add_DiscoverVertex (fun x ->
+            if x = source then
+                currentVertex <- source)
 
-        bfs.add_ExamineVertex
-            (fun x ->
-                currentVertex <- x
+        bfs.add_ExamineVertex (fun x ->
+            currentVertex <- x
 
-                if distances.[x] = currentDistance + 1 then
-                    currentDistance <- currentDistance + 1)
+            if distances.[x] = currentDistance + 1 then
+                currentDistance <- currentDistance + 1)
 
-        bfs.add_TreeEdge
-            (fun x ->
-                parents.[x.Target] <- x.Source
-                distances.[x.Target] <- distances.[x.Source] + 1)
+        bfs.add_TreeEdge (fun x ->
+            parents.[x.Target] <- x.Source
+
+            distances.[x.Target] <- distances.[x.Source] + 1)
 
         distances.[source] <- currentDistance
 

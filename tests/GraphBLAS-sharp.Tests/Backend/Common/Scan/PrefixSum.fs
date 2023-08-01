@@ -19,13 +19,10 @@ let wgSize = 128
 
 let q = defaultContext.Queue
 
-let makeTest plus zero isEqual scan (array: 'a []) =
+let makeTest plus zero isEqual scan (array: 'a[]) =
     if array.Length > 0 then
 
-        logger.debug (
-            eventX $"Array is %A{array}\n"
-            >> setField "array" (sprintf "%A" array)
-        )
+        logger.debug (eventX $"Array is %A{array}\n" >> setField "array" (sprintf "%A" array))
 
         let actual, actualSum =
             let clArray = context.CreateClArray array
@@ -35,10 +32,7 @@ let makeTest plus zero isEqual scan (array: 'a []) =
             let actualSum = total.ToHostAndFree q
             actual, actualSum
 
-        logger.debug (
-            eventX "Actual is {actual}\n"
-            >> setField "actual" (sprintf "%A" actual)
-        )
+        logger.debug (eventX "Actual is {actual}\n" >> setField "actual" (sprintf "%A" actual))
 
         let expected, expectedSum =
             array
@@ -48,16 +42,11 @@ let makeTest plus zero isEqual scan (array: 'a []) =
                     a, a)
                 zero
 
-        logger.debug (
-            eventX "Expected is {expected}\n"
-            >> setField "expected" (sprintf "%A" expected)
-        )
+        logger.debug (eventX "Expected is {expected}\n" >> setField "expected" (sprintf "%A" expected))
 
-        "Total sums should be equal"
-        |> Expect.equal actualSum expectedSum
+        "Total sums should be equal" |> Expect.equal actualSum expectedSum
 
-        "Arrays should be the same"
-        |> Tests.Utils.compareArrays isEqual actual expected
+        "Arrays should be the same" |> Tests.Utils.compareArrays isEqual actual expected
 
 let testFixtures plus plusQ zero isEqual name =
     Common.PrefixSum.runIncludeInPlace plusQ context wgSize

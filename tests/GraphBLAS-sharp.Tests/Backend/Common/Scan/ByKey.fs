@@ -12,16 +12,13 @@ let processor = Context.defaultContext.Queue
 
 let checkResult isEqual keysAndValues actual hostScan =
 
-    let expected =
-        HostPrimitives.scanByKey hostScan keysAndValues
+    let expected = HostPrimitives.scanByKey hostScan keysAndValues
 
-    "Results must be the same"
-    |> Utils.compareArrays isEqual actual expected
+    "Results must be the same" |> Utils.compareArrays isEqual actual expected
 
-let makeTestSequentialSegments isEqual scanHost scanDevice (keysAndValues: (int * 'a) []) =
+let makeTestSequentialSegments isEqual scanHost scanDevice (keysAndValues: (int * 'a)[]) =
     if keysAndValues.Length > 0 then
-        let keys, values =
-            Array.sortBy fst keysAndValues |> Array.unzip
+        let keys, values = Array.sortBy fst keysAndValues |> Array.unzip
 
         let offsets =
             HostPrimitives.getUniqueBitmapFirstOccurrence keys
@@ -29,11 +26,9 @@ let makeTestSequentialSegments isEqual scanHost scanDevice (keysAndValues: (int 
 
         let uniqueKeysCount = Array.distinct keys |> Array.length
 
-        let clKeys =
-            context.CreateClArrayWithSpecificAllocationMode(HostInterop, keys)
+        let clKeys = context.CreateClArrayWithSpecificAllocationMode(HostInterop, keys)
 
-        let clValues =
-            context.CreateClArrayWithSpecificAllocationMode(HostInterop, values)
+        let clValues = context.CreateClArrayWithSpecificAllocationMode(HostInterop, values)
 
         let clOffsets =
             context.CreateClArrayWithSpecificAllocationMode(HostInterop, offsets)
@@ -52,8 +47,7 @@ let createTest (zero: 'a) opAddQ opAdd isEqual deviceScan hostScan =
 
     let hostScan = hostScan zero opAdd
 
-    let deviceScan =
-        deviceScan opAddQ zero context Utils.defaultWorkGroupSize
+    let deviceScan = deviceScan opAddQ zero context Utils.defaultWorkGroupSize
 
     makeTestSequentialSegments isEqual hostScan deviceScan
     |> testPropertyWithConfig Utils.defaultConfig $"test on {typeof<'a>}"

@@ -30,6 +30,7 @@ let checkResult (isEqual: 'a -> 'a -> bool) (actual: Vector<'a>) (expected: Vect
         Utils.compareArrays isEqual actual expected "The values array must contain the default value"
     | Vector.Sparse actual, Vector.Sparse expected ->
         Utils.compareArrays isEqual actual.Values expected.Values "The values array must contain the default value"
+
         Utils.compareArrays (=) actual.Indices expected.Indices "The index array must contain the 0"
     | _ -> failwith "Copy format must be the same"
 
@@ -38,11 +39,10 @@ let correctnessGenericTest<'a when 'a: struct>
     zero
     (copy: MailboxProcessor<Brahma.FSharp.Msg> -> AllocationFlag -> ClVector<'a> -> ClVector<'a>)
     (case: OperationCase<VectorFormat>)
-    (array: 'a [])
+    (array: 'a[])
     =
 
-    let expected =
-        Utils.createVectorFromArray case.Format array (isEqual zero)
+    let expected = Utils.createVectorFromArray case.Format array (isEqual zero)
 
     if array.Length > 0 && expected.NNZ > 0 then
 
@@ -83,5 +83,4 @@ let testFixtures (case: OperationCase<VectorFormat>) =
       createTest<bool> case (=) false
       createTest<byte> case (=) 0uy ]
 
-let tests =
-    operationGPUTests "Backend.Vector.copy tests" testFixtures
+let tests = operationGPUTests "Backend.Vector.copy tests" testFixtures

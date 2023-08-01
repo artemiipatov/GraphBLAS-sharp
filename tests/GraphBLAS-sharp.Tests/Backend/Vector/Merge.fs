@@ -14,12 +14,10 @@ let context = Context.defaultContext.ClContext
 
 let config = Utils.defaultConfig
 
-let makeTest isEqual zero testFun (firstArray: 'a []) (secondArray: 'a []) =
-    let firstVector =
-        Vector.Sparse.FromArray(firstArray, isEqual zero)
+let makeTest isEqual zero testFun (firstArray: 'a[]) (secondArray: 'a[]) =
+    let firstVector = Vector.Sparse.FromArray(firstArray, isEqual zero)
 
-    let secondVector =
-        Vector.Sparse.FromArray(secondArray, isEqual zero)
+    let secondVector = Vector.Sparse.FromArray(secondArray, isEqual zero)
 
     if firstVector.NNZ > 0 && secondVector.NNZ > 0 then
 
@@ -44,12 +42,7 @@ let makeTest isEqual zero testFun (firstArray: 'a []) (secondArray: 'a []) =
 
         let actualValues =
             (actualFirstValues, actualSecondValues, actualIsLeftBitmap)
-            |||> Array.map3
-                     (fun leftValue rightValue isLeft ->
-                         if isLeft = 1 then
-                             leftValue
-                         else
-                             rightValue)
+            |||> Array.map3 (fun leftValue rightValue isLeft -> if isLeft = 1 then leftValue else rightValue)
 
         // expected run
         let firstValuesAndIndices =
@@ -60,14 +53,11 @@ let makeTest isEqual zero testFun (firstArray: 'a []) (secondArray: 'a []) =
 
         // preserve order of values then use stable sort
         let allValuesAndIndices =
-            Array.concat [ firstValuesAndIndices
-                           secondValuesAndIndices ]
+            Array.concat [ firstValuesAndIndices; secondValuesAndIndices ]
 
         // stable sort
         let expectedValues, expectedIndices =
-            Seq.sortBy snd allValuesAndIndices
-            |> Seq.toArray
-            |> Array.unzip
+            Seq.sortBy snd allValuesAndIndices |> Seq.toArray |> Array.unzip
 
         "Values should be the same"
         |> Utils.compareArrays isEqual actualValues expectedValues

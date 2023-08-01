@@ -8,34 +8,28 @@ module Matrix =
     type CSR<'a when 'a: struct> =
         { RowCount: int
           ColumnCount: int
-          RowPointers: int []
-          ColumnIndices: int []
-          Values: 'a [] }
+          RowPointers: int[]
+          ColumnIndices: int[]
+          Values: 'a[] }
 
-        static member FromArray2D(array: 'a [,], isZero: 'a -> bool) =
+        static member FromArray2D(array: 'a[,], isZero: 'a -> bool) =
             let rowsCount = array |> Array2D.length1
+
             let columnsCount = array |> Array2D.length2
 
             let convertedMatrix =
                 [ for i in 0 .. rowsCount - 1 -> array.[i, *] |> List.ofArray ]
-                |> List.map
-                    (fun row ->
-                        row
-                        |> List.mapi (fun i x -> (x, i))
-                        |> List.filter (fun pair -> not <| isZero (fst pair)))
+                |> List.map (fun row ->
+                    row
+                    |> List.mapi (fun i x -> (x, i))
+                    |> List.filter (fun pair -> not <| isZero (fst pair)))
                 |> List.fold
                     (fun (rowPointers, valueInx) row ->
                         ((rowPointers.Head + row.Length) :: rowPointers), valueInx @ row)
                     ([ 0 ], [])
 
-            { Values =
-                  convertedMatrix
-                  |> (snd >> List.unzip >> fst)
-                  |> List.toArray
-              ColumnIndices =
-                  convertedMatrix
-                  |> (snd >> List.unzip >> snd)
-                  |> List.toArray
+            { Values = convertedMatrix |> (snd >> List.unzip >> fst) |> List.toArray
+              ColumnIndices = convertedMatrix |> (snd >> List.unzip >> snd) |> List.toArray
               RowPointers = convertedMatrix |> fst |> List.rev |> List.toArray
               RowCount = rowsCount
               ColumnCount = columnsCount }
@@ -53,9 +47,9 @@ module Matrix =
     type COO<'a when 'a: struct> =
         { RowCount: int
           ColumnCount: int
-          Rows: int []
-          Columns: int []
-          Values: 'a [] }
+          Rows: int[]
+          Columns: int[]
+          Values: 'a[] }
 
         override this.ToString() =
             [ sprintf "COO Matrix     %ix%i \n" this.RowCount this.ColumnCount
@@ -66,14 +60,14 @@ module Matrix =
 
         member this.NNZ = this.Values.Length
 
-        static member FromTuples(rowCount: int, columnCount: int, rows: int [], columns: int [], values: 'a []) =
+        static member FromTuples(rowCount: int, columnCount: int, rows: int[], columns: int[], values: 'a[]) =
             { RowCount = rowCount
               ColumnCount = columnCount
               Rows = rows
               Columns = columns
               Values = values }
 
-        static member FromArray2D(array: 'a [,], isZero: 'a -> bool) =
+        static member FromArray2D(array: 'a[,], isZero: 'a -> bool) =
             let rows, cols, values =
                 array
                 |> Seq.cast<'a>
@@ -110,34 +104,28 @@ module Matrix =
     type CSC<'a when 'a: struct> =
         { RowCount: int
           ColumnCount: int
-          RowIndices: int []
-          ColumnPointers: int []
-          Values: 'a [] }
+          RowIndices: int[]
+          ColumnPointers: int[]
+          Values: 'a[] }
 
-        static member FromArray2D(array: 'a [,], isZero: 'a -> bool) =
+        static member FromArray2D(array: 'a[,], isZero: 'a -> bool) =
             let rowsCount = array |> Array2D.length1
+
             let columnsCount = array |> Array2D.length2
 
             let convertedMatrix =
                 [ for i in 0 .. columnsCount - 1 -> array.[*, i] |> List.ofArray ]
-                |> List.map
-                    (fun col ->
-                        col
-                        |> List.mapi (fun i x -> (x, i))
-                        |> List.filter (fun pair -> not <| isZero (fst pair)))
+                |> List.map (fun col ->
+                    col
+                    |> List.mapi (fun i x -> (x, i))
+                    |> List.filter (fun pair -> not <| isZero (fst pair)))
                 |> List.fold
                     (fun (colPointers, valueInx) col ->
                         ((colPointers.Head + col.Length) :: colPointers), valueInx @ col)
                     ([ 0 ], [])
 
-            { Values =
-                  convertedMatrix
-                  |> (snd >> List.unzip >> fst)
-                  |> List.toArray
-              RowIndices =
-                  convertedMatrix
-                  |> (snd >> List.unzip >> snd)
-                  |> List.toArray
+            { Values = convertedMatrix |> (snd >> List.unzip >> fst) |> List.toArray
+              RowIndices = convertedMatrix |> (snd >> List.unzip >> snd) |> List.toArray
               ColumnPointers = convertedMatrix |> fst |> List.rev |> List.toArray
               RowCount = rowsCount
               ColumnCount = columnsCount }
@@ -158,20 +146,16 @@ module Matrix =
           Rows: Vector.Sparse<'a> option list
           NNZ: int }
 
-        static member FromArray2D(array: 'a [,], isZero: 'a -> bool) =
+        static member FromArray2D(array: 'a[,], isZero: 'a -> bool) =
             let mutable nnz = 0
 
             let rows =
                 [ for i in 0 .. Array2D.length1 array - 1 do
-                      let vector =
-                          Vector.Sparse.FromArray(array.[i, *], isZero)
+                      let vector = Vector.Sparse.FromArray(array.[i, *], isZero)
 
                       nnz <- nnz + vector.NNZ
 
-                      if vector.NNZ > 0 then
-                          Some vector
-                      else
-                          None ]
+                      if vector.NNZ > 0 then Some vector else None ]
 
             { RowCount = Array2D.length1 array
               ColumnCount = Array2D.length2 array
@@ -181,8 +165,7 @@ module Matrix =
         member this.ToDevice(context: ClContext) =
 
             let rows =
-                this.Rows
-                |> List.map (Option.map (fun vector -> vector.ToDevice(context)))
+                this.Rows |> List.map (Option.map (fun vector -> vector.ToDevice(context)))
 
             { Context = context
               RowCount = this.RowCount
@@ -191,9 +174,9 @@ module Matrix =
               NNZ = this.NNZ }
 
     type Tuples<'a> =
-        { RowIndices: int []
-          ColumnIndices: int []
-          Values: 'a [] }
+        { RowIndices: int[]
+          ColumnIndices: int[]
+          Values: 'a[] }
 
 [<RequireQualifiedAccess>]
 type Matrix<'a when 'a: struct> =

@@ -11,14 +11,10 @@ module Generators =
     /// Generates empty matrices as well.
     /// </remarks>
     let dimension2DGenerator =
-        fun size -> Gen.choose (1, size)
-        |> Gen.sized
-        |> Gen.two
+        (fun size -> Gen.choose (1, size)) |> Gen.sized |> Gen.two
 
     let dimension3DGenerator =
-        fun size -> Gen.choose (1, size)
-        |> Gen.sized
-        |> Gen.three
+        (fun size -> Gen.choose (1, size)) |> Gen.sized |> Gen.three
 
     let rec normalFloat32Generator (random: System.Random) =
         gen {
@@ -26,6 +22,7 @@ module Generators =
 
             if System.Single.IsNormal rawValue then
                 let sign = float32 <| sign rawValue
+
                 let processedValue = ((+) 1.0f) <| (abs <| rawValue)
 
                 return processedValue * sign
@@ -53,8 +50,7 @@ module Generators =
 
         genWithSparsity
         <| fun sparsity ->
-            [ (sparsity, valuesGen)
-              (upperBound - sparsity, Gen.constant zero) ]
+            [ (sparsity, valuesGen); (upperBound - sparsity, Gen.constant zero) ]
             |> Gen.frequency
             |> handler
 
@@ -62,22 +58,18 @@ module Generators =
         static let matrixGenerator (valuesGenerator: Gen<'a>) =
             gen {
                 let! nrows, ncols = dimension2DGenerator
+
                 let! matrix = valuesGenerator |> Gen.array2DOfDim (nrows, ncols)
+
                 return matrix
             }
 
         static member IntType() =
-            matrixGenerator
-            |> genericSparseGenerator 0 Arb.generate<int>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0 Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             matrixGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -86,19 +78,13 @@ module Generators =
             |> Arb.fromGen
 
         static member SByteType() =
-            matrixGenerator
-            |> genericSparseGenerator 0y Arb.generate<sbyte>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0y Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            matrixGenerator
-            |> genericSparseGenerator 0uy Arb.generate<byte>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0uy Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            matrixGenerator
-            |> genericSparseGenerator 0s Arb.generate<int16>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0s Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
             matrixGenerator
@@ -114,6 +100,7 @@ module Generators =
         static let matrixGenerator (valuesGenerator: Gen<'a>) =
             gen {
                 let! nRows, _ = dimension2DGenerator
+
                 let! matrix = valuesGenerator |> Gen.array2DOfDim (nRows, nRows)
 
                 for row in 1 .. nRows - 1 do
@@ -124,17 +111,11 @@ module Generators =
             }
 
         static member IntType() =
-            matrixGenerator
-            |> genericSparseGenerator 0 Arb.generate<int>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0 Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             matrixGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -143,19 +124,13 @@ module Generators =
             |> Arb.fromGen
 
         static member SByteType() =
-            matrixGenerator
-            |> genericSparseGenerator 0y Arb.generate<sbyte>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0y Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            matrixGenerator
-            |> genericSparseGenerator 0uy Arb.generate<byte>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0uy Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            matrixGenerator
-            |> genericSparseGenerator 0s Arb.generate<int16>
-            |> Arb.fromGen
+            matrixGenerator |> genericSparseGenerator 0s Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
             matrixGenerator
@@ -172,13 +147,9 @@ module Generators =
             gen {
                 let! nRows, nColumns = dimension2DGenerator
 
-                let! matrixA =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRows, nColumns)
+                let! matrixA = valuesGenerator |> Gen.array2DOfDim (nRows, nColumns)
 
-                let! matrixB =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRows, nColumns)
+                let! matrixB = valuesGenerator |> Gen.array2DOfDim (nRows, nColumns)
 
                 return (matrixA, matrixB)
             }
@@ -190,11 +161,7 @@ module Generators =
 
         static member FloatType() =
             pairOfMatricesOfEqualSizeGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -232,13 +199,9 @@ module Generators =
             gen {
                 let! firstCount, secondCount, thirdCount = dimension3DGenerator
 
-                let! matrixA =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (firstCount, secondCount)
+                let! matrixA = valuesGenerator |> Gen.array2DOfDim (firstCount, secondCount)
 
-                let! matrixB =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (secondCount, thirdCount)
+                let! matrixB = valuesGenerator |> Gen.array2DOfDim (secondCount, thirdCount)
 
                 return (matrixA, matrixB)
             }
@@ -250,11 +213,7 @@ module Generators =
 
         static member FloatType() =
             pairOfMatricesOfEqualSizeGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -292,12 +251,12 @@ module Generators =
             gen {
                 let! nRows, nColumns = dimension2DGenerator
 
-                let! matrix =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRows, nColumns)
+                let! matrix = valuesGenerator |> Gen.array2DOfDim (nRows, nColumns)
 
                 let! vector = valuesGenerator |> Gen.arrayOfLength nColumns
+
                 let! mask = Arb.generate<bool> |> Gen.arrayOfLength nRows
+
                 return (matrix, vector, mask)
             }
 
@@ -308,11 +267,7 @@ module Generators =
 
         static member FloatType() =
             pairOfMatrixAndVectorOfCompatibleSizeGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -349,13 +304,13 @@ module Generators =
         static let pairOfVectorAndMatrixOfCompatibleSizeGenerator (valuesGenerator: Gen<'a>) =
             gen {
                 let! nRows, nColumns = dimension2DGenerator
+
                 let! vector = valuesGenerator |> Gen.arrayOfLength nRows
 
-                let! matrix =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRows, nColumns)
+                let! matrix = valuesGenerator |> Gen.array2DOfDim (nRows, nColumns)
 
                 let! mask = Arb.generate<bool> |> Gen.arrayOfLength nColumns
+
                 return (vector, matrix, mask)
             }
 
@@ -366,11 +321,7 @@ module Generators =
 
         static member FloatType() =
             pairOfVectorAndMatrixOfCompatibleSizeGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -407,11 +358,10 @@ module Generators =
         static let pairOfVectorAndMatrixOfCompatibleSizeGenerator (valuesGenerator: Gen<'a>) =
             gen {
                 let! nRows, nColumns = dimension2DGenerator
+
                 let! vector = valuesGenerator |> Gen.arrayOfLength nRows
 
-                let! matrix =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRows, nColumns)
+                let! matrix = valuesGenerator |> Gen.array2DOfDim (nRows, nColumns)
 
                 return (vector, matrix)
             }
@@ -423,11 +373,7 @@ module Generators =
 
         static member FloatType() =
             pairOfVectorAndMatrixOfCompatibleSizeGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -465,13 +411,9 @@ module Generators =
             gen {
                 let! nRowsA, nColsA, nColsB = dimension3DGenerator
 
-                let! matrixA =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRowsA, nColsA)
+                let! matrixA = valuesGenerator |> Gen.array2DOfDim (nRowsA, nColsA)
 
-                let! matrixB =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nColsA, nColsB)
+                let! matrixB = valuesGenerator |> Gen.array2DOfDim (nColsA, nColsB)
 
                 return (matrixA, matrixB)
             }
@@ -483,11 +425,7 @@ module Generators =
 
         static member FloatType() =
             pairOfMatricesOfCompatibleSizeGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -525,13 +463,9 @@ module Generators =
             gen {
                 let! nRowsA, nColumnsA, nColumnsB = dimension3DGenerator
 
-                let! matrixA =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nRowsA, nColumnsA)
+                let! matrixA = valuesGenerator |> Gen.array2DOfDim (nRowsA, nColumnsA)
 
-                let! matrixB =
-                    valuesGenerator
-                    |> Gen.array2DOfDim (nColumnsA, nColumnsB)
+                let! matrixB = valuesGenerator |> Gen.array2DOfDim (nColumnsA, nColumnsB)
 
                 let! mask =
                     (genericSparseGenerator false Arb.generate<bool>)
@@ -547,11 +481,7 @@ module Generators =
 
         static member FloatType() =
             pairOfMatricesOfCompatibleSizeWithMaskGenerator
-            |> genericSparseGenerator
-                0.
-                (Arb.Default.NormalFloat()
-                 |> Arb.toGen
-                 |> Gen.map float)
+            |> genericSparseGenerator 0. (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -596,8 +526,7 @@ module Generators =
 
     type ArrayOfDistinctKeys() =
         static let arrayOfDistinctKeysGenerator (keysGenerator: Gen<'n>) (valuesGenerator: Gen<'a>) =
-            let tuplesGenerator =
-                Gen.zip <| keysGenerator <| valuesGenerator
+            let tuplesGenerator = Gen.zip <| keysGenerator <| valuesGenerator
 
             gen {
                 let! length = Gen.sized <| fun size -> Gen.choose (1, size)
@@ -608,17 +537,13 @@ module Generators =
             }
 
         static member IntType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<int>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<int>
             |> Arb.fromGen
 
         static member FloatType() =
             arrayOfDistinctKeysGenerator
             <| Arb.generate<int>
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -628,54 +553,36 @@ module Generators =
             |> Arb.fromGen
 
         static member SByteType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<sbyte>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<sbyte>
             |> Arb.fromGen
 
         static member ByteType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<byte>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<byte>
             |> Arb.fromGen
 
         static member Int16Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<int16>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<int16>
             |> Arb.fromGen
 
         static member UInt16Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<uint16>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<uint16>
             |> Arb.fromGen
 
         static member Int32Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<int32>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<int32>
             |> Arb.fromGen
 
         static member UInt32Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<uint32>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<uint32>
             |> Arb.fromGen
 
         static member BoolType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<bool>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<bool>
             |> Arb.fromGen
 
     type ArrayOfDistinctKeys2D() =
         static let arrayOfDistinctKeysGenerator (keysGenerator: Gen<'n>) (valuesGenerator: Gen<'a>) =
-            let tuplesGenerator =
-                Gen.zip3
-                <| keysGenerator
-                <| keysGenerator
-                <| valuesGenerator
+            let tuplesGenerator = Gen.zip3 <| keysGenerator <| keysGenerator <| valuesGenerator
 
             gen {
                 let! length = Gen.sized <| fun size -> Gen.choose (1, size)
@@ -686,17 +593,13 @@ module Generators =
             }
 
         static member IntType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<int>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<int>
             |> Arb.fromGen
 
         static member FloatType() =
             arrayOfDistinctKeysGenerator
             <| Arb.generate<int>
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
@@ -706,53 +609,37 @@ module Generators =
             |> Arb.fromGen
 
         static member SByteType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<sbyte>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<sbyte>
             |> Arb.fromGen
 
         static member ByteType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<byte>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<byte>
             |> Arb.fromGen
 
         static member Int16Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<int16>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<int16>
             |> Arb.fromGen
 
         static member UInt16Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<uint16>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<uint16>
             |> Arb.fromGen
 
         static member Int32Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<int32>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<int32>
             |> Arb.fromGen
 
         static member UInt32Type() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<uint32>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<uint32>
             |> Arb.fromGen
 
         static member BoolType() =
-            arrayOfDistinctKeysGenerator
-            <| Arb.generate<int>
-            <| Arb.generate<bool>
+            arrayOfDistinctKeysGenerator <| Arb.generate<int> <| Arb.generate<bool>
             |> Arb.fromGen
 
     type ArrayOfAscendingKeys() =
         static let arrayOfAscendingKeysGenerator (valuesGenerator: Gen<'a>) =
             let tuplesGenerator =
-                Gen.zip
-                <| (Gen.sized <| fun size -> Gen.choose (0, size))
-                <| valuesGenerator
+                Gen.zip <| (Gen.sized <| fun size -> Gen.choose (0, size)) <| valuesGenerator
 
             gen {
                 let! length = Gen.sized <| fun size -> Gen.choose (1, size)
@@ -763,55 +650,37 @@ module Generators =
             }
 
         static member IntType() =
-            arrayOfAscendingKeysGenerator <| Arb.generate<int>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             arrayOfAscendingKeysGenerator
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            arrayOfAscendingKeysGenerator
-            <| (normalFloat32Generator <| System.Random())
+            arrayOfAscendingKeysGenerator <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<byte>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<int16>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<uint16>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<int32>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<uint32>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            arrayOfAscendingKeysGenerator
-            <| Arb.generate<bool>
-            |> Arb.fromGen
+            arrayOfAscendingKeysGenerator <| Arb.generate<bool> |> Arb.fromGen
 
     type BufferCompatibleArray() =
         static let compatibleVector (valuesGenerator: Gen<'a>) =
@@ -824,48 +693,35 @@ module Generators =
             }
 
         static member IntType() =
-            compatibleVector <| Arb.generate<int>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
-            compatibleVector
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            compatibleVector <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            compatibleVector
-            <| (normalFloat32Generator <| System.Random())
-            |> Arb.fromGen
+            compatibleVector <| (normalFloat32Generator <| System.Random()) |> Arb.fromGen
 
         static member SByteType() =
-            compatibleVector <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            compatibleVector <| Arb.generate<byte>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            compatibleVector <| Arb.generate<int16>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            compatibleVector <| Arb.generate<uint16>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            compatibleVector <| Arb.generate<int32>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            compatibleVector <| Arb.generate<uint32>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            compatibleVector <| Arb.generate<bool>
-            |> Arb.fromGen
+            compatibleVector <| Arb.generate<bool> |> Arb.fromGen
 
     type PairOfVectorsOfEqualSize() =
         static let pairOfVectorsOfEqualSize (valuesGenerator: Gen<'a>) =
@@ -880,48 +736,37 @@ module Generators =
             }
 
         static member IntType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             pairOfVectorsOfEqualSize
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            pairOfVectorsOfEqualSize
-            <| (normalFloat32Generator <| System.Random())
+            pairOfVectorsOfEqualSize <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<byte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<bool>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<bool> |> Arb.fromGen
 
     type PairOfArraysAndValue() =
         static let pairOfVectorsOfEqualSize (valuesGenerator: Gen<'a>) =
@@ -932,55 +777,43 @@ module Generators =
 
                 let! rightArray = Gen.arrayOfLength length valuesGenerator
 
-                let value =
-                    List.last <| Gen.sample 100 1 valuesGenerator
+                let value = List.last <| Gen.sample 100 1 valuesGenerator
 
                 return (leftArray, rightArray, value)
             }
 
         static member IntType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             pairOfVectorsOfEqualSize
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            pairOfVectorsOfEqualSize
-            <| (normalFloat32Generator <| System.Random())
+            pairOfVectorsOfEqualSize <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<byte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<bool>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<bool> |> Arb.fromGen
 
     type Sub() =
         static let arrayAndChunkPosition (valuesGenerator: Gen<'a>) =
@@ -990,54 +823,44 @@ module Generators =
                 let! array = Gen.arrayOfLength length valuesGenerator
 
                 let! startPosition = Gen.choose (0, length - 2)
+
                 let! count = Gen.choose (1, length - startPosition - 1)
 
                 return (array, startPosition, count)
             }
 
         static member IntType() =
-            arrayAndChunkPosition <| Arb.generate<int>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             arrayAndChunkPosition
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            arrayAndChunkPosition
-            <| (normalFloat32Generator <| System.Random())
+            arrayAndChunkPosition <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            arrayAndChunkPosition <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            arrayAndChunkPosition <| Arb.generate<byte>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            arrayAndChunkPosition <| Arb.generate<int16>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            arrayAndChunkPosition <| Arb.generate<uint16>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            arrayAndChunkPosition <| Arb.generate<int32>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            arrayAndChunkPosition <| Arb.generate<uint32>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            arrayAndChunkPosition <| Arb.generate<bool>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<bool> |> Arb.fromGen
 
     type ChunkBySize() =
         static let arrayAndChunkPosition (valuesGenerator: Gen<'a>) =
@@ -1052,48 +875,37 @@ module Generators =
             }
 
         static member IntType() =
-            arrayAndChunkPosition <| Arb.generate<int>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             arrayAndChunkPosition
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            arrayAndChunkPosition
-            <| (normalFloat32Generator <| System.Random())
+            arrayAndChunkPosition <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            arrayAndChunkPosition <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            arrayAndChunkPosition <| Arb.generate<byte>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            arrayAndChunkPosition <| Arb.generate<int16>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            arrayAndChunkPosition <| Arb.generate<uint16>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            arrayAndChunkPosition <| Arb.generate<int32>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            arrayAndChunkPosition <| Arb.generate<uint32>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            arrayAndChunkPosition <| Arb.generate<bool>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<bool> |> Arb.fromGen
 
     type Blit() =
         static let pairOfVectorsOfEqualSize (valuesGenerator: Gen<'a>) =
@@ -1116,48 +928,37 @@ module Generators =
             }
 
         static member IntType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             pairOfVectorsOfEqualSize
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            pairOfVectorsOfEqualSize
-            <| (normalFloat32Generator <| System.Random())
+            pairOfVectorsOfEqualSize <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<byte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<bool>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<bool> |> Arb.fromGen
 
     type Fill() =
         static let pairOfVectorsOfEqualSize (valuesGenerator: Gen<'a>) =
@@ -1176,48 +977,37 @@ module Generators =
             }
 
         static member IntType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             pairOfVectorsOfEqualSize
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            pairOfVectorsOfEqualSize
-            <| (normalFloat32Generator <| System.Random())
+            pairOfVectorsOfEqualSize <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<byte>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint16>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<int32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            pairOfVectorsOfEqualSize <| Arb.generate<uint32>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            pairOfVectorsOfEqualSize <| Arb.generate<bool>
-            |> Arb.fromGen
+            pairOfVectorsOfEqualSize <| Arb.generate<bool> |> Arb.fromGen
 
     type UpperBound() =
         static let arrayAndChunkPosition (valuesGenerator: Gen<'a>) =
@@ -1234,48 +1024,37 @@ module Generators =
             }
 
         static member IntType() =
-            arrayAndChunkPosition <| Arb.generate<int>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int> |> Arb.fromGen
 
         static member FloatType() =
             arrayAndChunkPosition
-            <| (Arb.Default.NormalFloat()
-                |> Arb.toGen
-                |> Gen.map float)
+            <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
             |> Arb.fromGen
 
         static member Float32Type() =
-            arrayAndChunkPosition
-            <| (normalFloat32Generator <| System.Random())
+            arrayAndChunkPosition <| (normalFloat32Generator <| System.Random())
             |> Arb.fromGen
 
         static member SByteType() =
-            arrayAndChunkPosition <| Arb.generate<sbyte>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<sbyte> |> Arb.fromGen
 
         static member ByteType() =
-            arrayAndChunkPosition <| Arb.generate<byte>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<byte> |> Arb.fromGen
 
         static member Int16Type() =
-            arrayAndChunkPosition <| Arb.generate<int16>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int16> |> Arb.fromGen
 
         static member UInt16Type() =
-            arrayAndChunkPosition <| Arb.generate<uint16>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<uint16> |> Arb.fromGen
 
         static member Int32Type() =
-            arrayAndChunkPosition <| Arb.generate<int32>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<int32> |> Arb.fromGen
 
         static member UInt32Type() =
-            arrayAndChunkPosition <| Arb.generate<uint32>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<uint32> |> Arb.fromGen
 
         static member BoolType() =
-            arrayAndChunkPosition <| Arb.generate<bool>
-            |> Arb.fromGen
+            arrayAndChunkPosition <| Arb.generate<bool> |> Arb.fromGen
 
     module ClArray =
         type Set() =
@@ -1293,48 +1072,37 @@ module Generators =
                 }
 
             static member IntType() =
-                arrayAndChunkPosition <| Arb.generate<int>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int> |> Arb.fromGen
 
             static member FloatType() =
                 arrayAndChunkPosition
-                <| (Arb.Default.NormalFloat()
-                    |> Arb.toGen
-                    |> Gen.map float)
+                <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
                 |> Arb.fromGen
 
             static member Float32Type() =
-                arrayAndChunkPosition
-                <| (normalFloat32Generator <| System.Random())
+                arrayAndChunkPosition <| (normalFloat32Generator <| System.Random())
                 |> Arb.fromGen
 
             static member SByteType() =
-                arrayAndChunkPosition <| Arb.generate<sbyte>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<sbyte> |> Arb.fromGen
 
             static member ByteType() =
-                arrayAndChunkPosition <| Arb.generate<byte>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<byte> |> Arb.fromGen
 
             static member Int16Type() =
-                arrayAndChunkPosition <| Arb.generate<int16>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int16> |> Arb.fromGen
 
             static member UInt16Type() =
-                arrayAndChunkPosition <| Arb.generate<uint16>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<uint16> |> Arb.fromGen
 
             static member Int32Type() =
-                arrayAndChunkPosition <| Arb.generate<int32>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int32> |> Arb.fromGen
 
             static member UInt32Type() =
-                arrayAndChunkPosition <| Arb.generate<uint32>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<uint32> |> Arb.fromGen
 
             static member BoolType() =
-                arrayAndChunkPosition <| Arb.generate<bool>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<bool> |> Arb.fromGen
 
         type Item() =
             static let arrayAndChunkPosition (valuesGenerator: Gen<'a>) =
@@ -1349,104 +1117,84 @@ module Generators =
                 }
 
             static member IntType() =
-                arrayAndChunkPosition <| Arb.generate<int>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int> |> Arb.fromGen
 
             static member FloatType() =
                 arrayAndChunkPosition
-                <| (Arb.Default.NormalFloat()
-                    |> Arb.toGen
-                    |> Gen.map float)
+                <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
                 |> Arb.fromGen
 
             static member Float32Type() =
-                arrayAndChunkPosition
-                <| (normalFloat32Generator <| System.Random())
+                arrayAndChunkPosition <| (normalFloat32Generator <| System.Random())
                 |> Arb.fromGen
 
             static member SByteType() =
-                arrayAndChunkPosition <| Arb.generate<sbyte>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<sbyte> |> Arb.fromGen
 
             static member ByteType() =
-                arrayAndChunkPosition <| Arb.generate<byte>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<byte> |> Arb.fromGen
 
             static member Int16Type() =
-                arrayAndChunkPosition <| Arb.generate<int16>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int16> |> Arb.fromGen
 
             static member UInt16Type() =
-                arrayAndChunkPosition <| Arb.generate<uint16>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<uint16> |> Arb.fromGen
 
             static member Int32Type() =
-                arrayAndChunkPosition <| Arb.generate<int32>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int32> |> Arb.fromGen
 
             static member UInt32Type() =
-                arrayAndChunkPosition <| Arb.generate<uint32>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<uint32> |> Arb.fromGen
 
             static member BoolType() =
-                arrayAndChunkPosition <| Arb.generate<bool>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<bool> |> Arb.fromGen
 
     module Matrix =
         type Sub() =
             static let arrayAndChunkPosition (valuesGenerator: Gen<'a>) =
                 gen {
                     let! rowsCount = Gen.sized <| fun size -> Gen.choose (2, size + 2)
+
                     let! columnsCount = Gen.sized <| fun size -> Gen.choose (1, size + 1)
 
                     let! array = Gen.array2DOfDim (rowsCount, columnsCount) valuesGenerator
 
                     let! startPosition = Gen.choose (0, rowsCount - 2)
+
                     let! count = Gen.choose (1, rowsCount - startPosition - 1)
 
                     return (array, startPosition, count)
                 }
 
             static member IntType() =
-                arrayAndChunkPosition <| Arb.generate<int>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int> |> Arb.fromGen
 
             static member FloatType() =
                 arrayAndChunkPosition
-                <| (Arb.Default.NormalFloat()
-                    |> Arb.toGen
-                    |> Gen.map float)
+                <| (Arb.Default.NormalFloat() |> Arb.toGen |> Gen.map float)
                 |> Arb.fromGen
 
             static member Float32Type() =
-                arrayAndChunkPosition
-                <| (normalFloat32Generator <| System.Random())
+                arrayAndChunkPosition <| (normalFloat32Generator <| System.Random())
                 |> Arb.fromGen
 
             static member SByteType() =
-                arrayAndChunkPosition <| Arb.generate<sbyte>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<sbyte> |> Arb.fromGen
 
             static member ByteType() =
-                arrayAndChunkPosition <| Arb.generate<byte>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<byte> |> Arb.fromGen
 
             static member Int16Type() =
-                arrayAndChunkPosition <| Arb.generate<int16>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int16> |> Arb.fromGen
 
             static member UInt16Type() =
-                arrayAndChunkPosition <| Arb.generate<uint16>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<uint16> |> Arb.fromGen
 
             static member Int32Type() =
-                arrayAndChunkPosition <| Arb.generate<int32>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<int32> |> Arb.fromGen
 
             static member UInt32Type() =
-                arrayAndChunkPosition <| Arb.generate<uint32>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<uint32> |> Arb.fromGen
 
             static member BoolType() =
-                arrayAndChunkPosition <| Arb.generate<bool>
-                |> Arb.fromGen
+                arrayAndChunkPosition <| Arb.generate<bool> |> Arb.fromGen

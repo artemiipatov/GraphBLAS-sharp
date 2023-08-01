@@ -9,7 +9,7 @@
       ]
     },
     "dotnet-reportgenerator-globaltool": {
-      "version": "4.2.15",
+      "version": "5.1.18",
       "commands": [
         "reportgenerator"
       ]
@@ -20,22 +20,22 @@
         "paket"
       ]
     },
-    "fcswatch-cli": {
-      "version": "0.7.14",
-      "commands": [
-        "fcswatch"
-      ]
-    },
     "fsharp-analyzers": {
-      "version": "0.9.0",
+      "version": "0.11.0",
       "commands": [
         "fsharp-analyzers"
       ]
     },
-    "fantomas-tool": {
-      "version": "4.5.4",
+    "fantomas": {
+      "version": "6.0.1",
       "commands": [
-          "fantomas"
+        "fantomas"
+      ]
+    },
+    "fsdocs-tool": {
+      "version": "18.1.0",
+      "commands": [
+        "fsdocs"
       ]
     }
   }
