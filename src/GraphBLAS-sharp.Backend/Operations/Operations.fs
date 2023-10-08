@@ -261,9 +261,12 @@ module Operations =
             fun (processor: MailboxProcessor<_>) allocationMode (leftMatrix: ClMatrix<'a>) (rightMatrix: ClMatrix<'b>) ->
                 match leftMatrix, rightMatrix with
                 | ClMatrix.CSR leftMatrix, ClMatrix.CSR rightMatrix ->
-                    let allocCapacity = List.max [ sizeof<'a>; sizeof<'c>; sizeof<'b> ] * 1<Byte>
+                    let allocCapacity =
+                        List.max [ sizeof<'a>; sizeof<'c>; sizeof<'b> ] |> uint64 |> (*) 1UL<Byte>
 
-                    let resultCapacity = (clContext.MaxMemAllocSize / allocCapacity) / 3
+                    let resultCapacity = (clContext.MaxMemAllocSize / allocCapacity) / 3UL
+
+                    let resultCapacity = (min <| uint64 System.Int32.MaxValue <| resultCapacity) |> int
 
                     run processor allocationMode resultCapacity leftMatrix rightMatrix
                 | _ -> failwith "Matrix formats are not matching"

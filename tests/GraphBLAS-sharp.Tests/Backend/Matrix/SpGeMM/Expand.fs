@@ -213,4 +213,6 @@ let generalTests =
           ArithmeticOperations.float32Mul
           Operations.SpGeMM.expand
       createGeneralTest false (=) ArithmeticOperations.boolAdd ArithmeticOperations.boolMul Operations.SpGeMM.expand ]
-    |> testList "general"
+    |> testList "General"
+
+let tests = testList "SpGeMM.Expand" [ generalTests ]
