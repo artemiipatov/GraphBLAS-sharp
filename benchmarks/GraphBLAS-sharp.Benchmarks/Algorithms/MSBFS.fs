@@ -27,7 +27,7 @@ type Benchmarks<'elem when 'elem : struct>(
     let mutable matrix = Unchecked.defaultof<ClMatrix<'elem>>
     let mutable matrixHost = Unchecked.defaultof<_>
 
-    member val ResultLevels = Unchecked.defaultof<ClVector<'elem>> with get,set
+    member val ResultLevels = Unchecked.defaultof<ClMatrix<'elem>> with get,set
 
     [<ParamsSource("AvailableContexts")>]
     member val OclContextInfo = Unchecked.defaultof<Utils.BenchmarkContext * int> with get, set
@@ -73,7 +73,7 @@ type Benchmarks<'elem when 'elem : struct>(
 
     member this.ClearResult() =
         match this.ResultLevels with
-        | ClVector.Dense result -> result.FreeAndWait this.Processor
+        | ClMatrix.COO result -> result.Dispose this.Processor
         | _ -> failwith "Impossible"
 
     member this.ReadMatrix() =
@@ -130,56 +130,7 @@ type WithoutTransferBenchmark<'elem when 'elem : struct>(
 type BFSWithoutTransferBenchmarkInt32() =
 
     inherit WithoutTransferBenchmark<int>(
-        (Algorithms.MSBFS.runLevels (fst ArithmeticOperations.intMul) (snd ArithmeticOperations.intMul)),
-        int32,
-        (fun _ -> Utils.nextInt (System.Random())),
-        0,
-        (fun context matrix -> ClMatrix.CSR <| matrix.ToCSR.ToDevice context))
-
-    static member InputMatrixProvider =
-        Benchmarks<_>.InputMatrixProviderBuilder "MSBFSBenchmarks.txt"
-
-type WithTransferBenchmark<'elem when 'elem : struct>(
-    buildFunToBenchmark,
-    converter: string -> 'elem,
-    boolConverter,
-    vertex,
-    buildMatrix) =
-
-    inherit Benchmarks<'elem>(
-        buildFunToBenchmark,
-        converter,
-        boolConverter,
-        vertex,
-        buildMatrix)
-
-    [<GlobalSetup>]
-    override this.GlobalSetup() =
-        this.ReadMatrix()
-
-    [<GlobalCleanup>]
-    override this.GlobalCleanup() =
-        this.ClearResult()
-
-    [<IterationCleanup>]
-    override this.IterationCleanup() =
-        this.ClearInputMatrix()
-        this.ClearResult()
-
-    [<Benchmark>]
-    override this.Benchmark() =
-        this.LoadMatrixToGPU()
-        this.MSBFS()
-        match this.ResultLevels with
-        | ClVector.Dense result ->
-            result.ToHost this.Processor |> ignore
-            this.Processor.PostAndReply Msg.MsgNotifyMe
-        | _ -> failwith "Impossible"
-
-type BFSWithTransferBenchmarkInt32() =
-
-    inherit WithTransferBenchmark<int>(
-        (Algorithms.MSBFS.runLevels (fst ArithmeticOperations.intMul) (snd ArithmeticOperations.intMul)),
+        (Algorithms.MSBFS.runLevels (fst ArithmeticOperations.intAdd) (fst ArithmeticOperations.intMul)),
         int32,
         (fun _ -> Utils.nextInt (System.Random())),
         0,
