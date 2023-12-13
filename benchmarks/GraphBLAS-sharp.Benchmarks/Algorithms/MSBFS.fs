@@ -127,7 +127,7 @@ type WithoutTransferBenchmark<'elem when 'elem : struct>(
         this.MSBFS()
         this.Processor.PostAndReply Msg.MsgNotifyMe
 
-type BFSWithoutTransferBenchmarkInt32() =
+type MSBFSWithoutTransferBenchmarkInt32() =
 
     inherit WithoutTransferBenchmark<int>(
         (Algorithms.MSBFS.runLevels (fst ArithmeticOperations.intAdd) (fst ArithmeticOperations.intMul)),
