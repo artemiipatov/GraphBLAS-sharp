@@ -133,7 +133,7 @@ type BFSWithoutTransferBenchmarkInt32() =
         (Algorithms.MSBFS.runLevels (fst ArithmeticOperations.intAdd) (fst ArithmeticOperations.intMul)),
         int32,
         (fun _ -> Utils.nextInt (System.Random())),
-        0,
+        List.init 1971281 id,
         (fun context matrix -> ClMatrix.CSR <| matrix.ToCSR.ToDevice context))
 
     static member InputMatrixProvider =
