@@ -447,7 +447,7 @@ module Operations =
                         |> (*) 1UL<Byte>
 
                     let resultCapacity =
-                        (clContext.MaxMemAllocSize / allocCapacity) / 3UL
+                        (clContext.MaxMemAllocSize / allocCapacity) / 20UL
 
                     let resultCapacity =
                         (min
@@ -487,7 +487,7 @@ module Operations =
                             |> (*) 1UL<Byte>
 
                         let resultCapacity =
-                            (clContext.MaxMemAllocSize / allocCapacity) / 3UL
+                            (clContext.MaxMemAllocSize / allocCapacity) / 10UL
 
                         let resultCapacity =
                             (min

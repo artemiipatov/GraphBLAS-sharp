@@ -113,6 +113,7 @@ module internal Expand =
             Common.Gather.run clContext workGroupSize
 
         fun (processor: MailboxProcessor<_>) (lengths: int) (segmentsPointers: ClArray<int>) (leftMatrix: ClMatrix.COO<'a>) (rightMatrix: ClMatrix.CSR<'b>) ->
+
             // Compute left matrix positions
             let leftMatrixPositions = zeroCreate processor DeviceOnly lengths
 
@@ -634,7 +635,11 @@ module internal Expand =
                 elif generalLength < maxAllocSize then
                     segmentLengths.Free processor
 
-                    runOneStep processor allocationMode leftMatrix rightMatrixRowsNNZ rightMatrix
+                    let result = runOneStep processor allocationMode leftMatrix rightMatrixRowsNNZ rightMatrix
+
+                    rightMatrixRowsNNZ.Free processor
+
+                    result
                 else
                     let result =
                         runManySteps

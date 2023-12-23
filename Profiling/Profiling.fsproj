@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Program.fs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\benchmarks\GraphBLAS-sharp.Benchmarks\GraphBLAS-sharp.Benchmarks.fsproj" />
+      <ProjectReference Include="..\src\GraphBLAS-sharp.Backend\GraphBLAS-sharp.Backend.fsproj" />
+      <ProjectReference Include="..\src\GraphBLAS-sharp\GraphBLAS-sharp.fsproj" />
+    </ItemGroup>
+
+</Project>
